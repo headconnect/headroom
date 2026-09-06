@@ -11,6 +11,8 @@ as the usage pages on claude.ai, chatgpt.com and github.com.
 Menu bar title: `A 12% · O 77% · G 18%`, the peak utilisation per provider,
 tagged by vendor (Anthropic, OpenAI, GitHub).
 
+![headroom popover showing Claude, Codex and Copilot usage](docs/images/usage.jpeg)
+
 ## Requirements
 
 - macOS 14 or later
@@ -164,3 +166,7 @@ macOS may ask for keychain access once after rebuilding; choose *Always Allow*.
 ## License
 
 [MIT](LICENSE)
+
+## AI disclosure
+
+See [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
