@@ -1,5 +1,8 @@
 # headroom
 
+[![Release](https://img.shields.io/github/v/release/headconnect/headroom)](https://github.com/headconnect/headroom/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 macOS menu bar app showing your Claude, Codex and GitHub Copilot plan usage
 with reset countdowns: the 5-hour session and weekly windows for Claude and
 Codex, the monthly premium-request quota for Copilot. It reads the same numbers
@@ -11,18 +14,26 @@ tagged by vendor (Anthropic, OpenAI, GitHub).
 ## Requirements
 
 - macOS 14 or later
-- Swift 5.10+ toolchain (Xcode Command Line Tools are enough)
 - Any of: a Claude Pro/Max/Team account, a ChatGPT account with Codex, a GitHub account with Copilot
 
 ## Install
+
+Download the latest DMG from [Releases](https://github.com/headconnect/headroom/releases/latest),
+open it, and drag headroom.app to Applications. It's signed and notarized, so
+Gatekeeper lets it run without extra steps.
+
+Tick "Launch at login" in the popover to keep it running.
+
+### Build from source
+
+Needs a Swift 5.10+ toolchain (Xcode Command Line Tools are enough):
 
 ```sh
 make install   # builds build/headroom.app and copies it to /Applications
 open /Applications/headroom.app
 ```
 
-`make run` builds and launches without installing. Tick "Launch at login" in the
-popover to keep it running.
+`make run` builds and launches without installing.
 
 ## Sign in
 
@@ -149,3 +160,7 @@ Sources/HeadroomChecks/  check runner used by `make test`
 
 Development builds are ad-hoc signed, so each build has a new signature and
 macOS may ask for keychain access once after rebuilding; choose *Always Allow*.
+
+## License
+
+[MIT](LICENSE)
