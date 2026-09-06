@@ -1,11 +1,14 @@
 #!/bin/sh
 # Builds a signed app, packs it into a DMG, and notarizes it.
-#   SIGN_IDENTITY   "Developer ID Application: Name (TEAMID)"; required for a shippable build
+#   SIGN_IDENTITY   "Developer ID Application: Name (TEAMID)"; defaults to the one in your keychain, else ad-hoc
 #   NOTARY_PROFILE  notarytool keychain profile name; skip notarization if unset
 set -eu
 cd "$(dirname "$0")/.."
 
-: "${SIGN_IDENTITY:=-}"
+if [ -z "${SIGN_IDENTITY:-}" ]; then
+    SIGN_IDENTITY=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -1)
+fi
+export SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 scripts/bundle.sh
 
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Resources/Info.plist)

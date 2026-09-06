@@ -80,13 +80,13 @@ The app talks only to anthropic.com, claude.ai, openai.com, chatgpt.com and gith
 ## Release
 
 `make release` builds `build/UsageWidget-<version>.dmg`. To make it installable
-on other Macs it must be signed with a Developer ID and notarized, which needs
-two environment variables:
+on other Macs it must be signed with a Developer ID and notarized. The script
+uses the Developer ID Application identity in your keychain if there is one;
+set `SIGN_IDENTITY` to choose explicitly. Notarization runs when
+`NOTARY_PROFILE` is set:
 
 ```sh
-export SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
-export NOTARY_PROFILE=UsageWidget
-make release
+NOTARY_PROFILE=UsageWidget make release
 ```
 
 One-time setup with an Apple Developer account:
