@@ -135,6 +135,11 @@ check("jwt claims") {
 
 // MARK: Formatting
 
+check("version comparison") {
+    UpdateChecker.isNewer("1.1", than: "1.0.0") && UpdateChecker.isNewer("1.0.1", than: "1.0")
+        && !UpdateChecker.isNewer("1.0.0", than: "1.0") && !UpdateChecker.isNewer("0.9.9", than: "1.0")
+}
+
 check("countdown formatting") {
     let now = Date(timeIntervalSince1970: 0)
     return Format.countdown(to: now.addingTimeInterval(16_181), from: now) == "4h 30m"

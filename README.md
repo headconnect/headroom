@@ -11,6 +11,8 @@ as the usage pages on claude.ai, chatgpt.com and github.com.
 Menu bar: `A ▤ 12%/4%  O ▤ 77%/47%  G ▤ 18%`, one entry per provider, tagged
 by vendor (Anthropic, OpenAI, GitHub): a mini bar per limit and the percentages,
 short-term window first (session/weekly). Bars turn orange at 70 % and red at 90 %.
+The gear in the popover chooses bars and/or percentages, session and/or weekly,
+the popover opacity, launch at login, and an optional update check.
 
 ![headroom popover showing Claude, Codex and Copilot usage](docs/images/usage.jpeg)
 
@@ -26,7 +28,7 @@ open it, and drag headroom into the Applications folder shown next to it. It's
 signed and notarized, so Gatekeeper lets it run without extra steps. Then open
 it from Applications or Spotlight; it appears in the menu bar, not the Dock.
 
-Tick "Launch at login" in the popover to keep it running.
+Tick "Launch at login" under the gear in the popover to keep it running.
 
 ### Build from source
 
@@ -92,7 +94,10 @@ These endpoints are not publicly documented, so field names may change. The
 Claude parser accepts any limit key that carries a `utilization` value; unknown
 keys are shown only when they have a reset time.
 
-The app talks only to anthropic.com, claude.ai, openai.com, chatgpt.com and github.com.
+The app talks only to anthropic.com, claude.ai, openai.com, chatgpt.com and
+github.com. With "Check for updates" on (off by default) it also asks
+api.github.com for this repository's latest release every 6 hours and shows a
+link in the popover when it is newer than the running version.
 
 ## Release
 

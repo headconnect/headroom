@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// "A ▤ 12%/4% · O ▤ 77%/47% · G ▤ 18%": per signed-in provider, its tag, a
+/// "A ▤ 12%/4%  O ▤ 77%/47%  G ▤ 18%": per signed-in provider, its tag, a
 /// mini bar per limit window and the percentages, short-term window first.
+/// Which parts appear is a user setting.
 struct MenuBarLabel: View {
     let monitors: [ProviderMonitor]
     /// Called with the rendered width so the status item can follow it.
@@ -11,7 +12,7 @@ struct MenuBarLabel: View {
         let active = monitors.filter(\.isSignedIn)
         HStack(spacing: 10) {
             if active.isEmpty {
-                Text("Usage")
+                Text("Headroom")
             } else {
                 ForEach(active) { ProviderGauge(monitor: $0) }
             }
@@ -25,19 +26,36 @@ struct MenuBarLabel: View {
 
 private struct ProviderGauge: View {
     let monitor: ProviderMonitor
+    @AppStorage(Settings.menuBarBars) private var showBars = true
+    @AppStorage(Settings.menuBarPercent) private var showPercent = true
+    @AppStorage(Settings.menuBarSession) private var showSession = true
+    @AppStorage(Settings.menuBarWeekly) private var showWeekly = true
 
     var body: some View {
         HStack(spacing: 4) {
             Text(monitor.provider.tag).fontWeight(.semibold)
-            if let windows = monitor.snapshot?.headline, !windows.isEmpty {
-                VStack(spacing: 2) {
-                    ForEach(windows) { MiniBar(percent: $0.percentUsed) }
-                }
-                Text(windows.map { Format.percent($0.percentUsed) }.joined(separator: "/"))
-            } else {
+            let windows = selectedWindows
+            if windows.isEmpty {
                 Text("–")
+            } else {
+                if showBars {
+                    VStack(spacing: 2) {
+                        ForEach(windows) { MiniBar(percent: $0.percentUsed) }
+                    }
+                }
+                if showPercent {
+                    Text(windows.map { Format.percent($0.percentUsed) }.joined(separator: "/"))
+                }
             }
         }
+    }
+
+    /// The headline windows the user wants; a provider with a single window
+    /// (Copilot) always shows it.
+    private var selectedWindows: [UsageWindow] {
+        let headline = Array(monitor.snapshot?.headline ?? [])
+        guard headline.count > 1 else { return headline }
+        return headline.enumerated().filter { $0.offset == 0 ? showSession : showWeekly }.map(\.element)
     }
 }
 

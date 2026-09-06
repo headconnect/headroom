@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let monitors = Provider.allCases.map { ProviderMonitor(provider: $0) }
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
+    private let updates = UpdateChecker()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard let button = statusItem.button else { return }
@@ -34,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.target = self
         button.action = #selector(togglePopover)
 
-        let content = NSHostingController(rootView: PopoverView(monitors: monitors))
+        let content = NSHostingController(rootView: PopoverView(monitors: monitors, updates: updates))
         content.sizingOptions = .preferredContentSize
         popover.contentViewController = content
         popover.behavior = .transient
