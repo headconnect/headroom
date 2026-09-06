@@ -8,8 +8,9 @@ with reset countdowns: the 5-hour session and weekly windows for Claude and
 Codex, the monthly premium-request quota for Copilot. It reads the same numbers
 as the usage pages on claude.ai, chatgpt.com and github.com.
 
-Menu bar title: `A 12% · O 77% · G 18%`, the peak utilisation per provider,
-tagged by vendor (Anthropic, OpenAI, GitHub).
+Menu bar: `A ▤ 12%/4%  O ▤ 77%/47%  G ▤ 18%`, one entry per provider, tagged
+by vendor (Anthropic, OpenAI, GitHub): a mini bar per limit and the percentages,
+short-term window first (session/weekly). Bars turn orange at 70 % and red at 90 %.
 
 ![headroom popover showing Claude, Codex and Copilot usage](docs/images/usage.jpeg)
 
@@ -21,8 +22,9 @@ tagged by vendor (Anthropic, OpenAI, GitHub).
 ## Install
 
 Download the latest DMG from [Releases](https://github.com/headconnect/headroom/releases/latest),
-open it, and drag headroom.app to Applications. It's signed and notarized, so
-Gatekeeper lets it run without extra steps.
+open it, and drag headroom into the Applications folder shown next to it. It's
+signed and notarized, so Gatekeeper lets it run without extra steps. Then open
+it from Applications or Spotlight; it appears in the menu bar, not the Dock.
 
 Tick "Launch at login" in the popover to keep it running.
 
@@ -43,14 +45,16 @@ Each provider is signed in separately. Tokens are stored in your login keychain
 under the service `no.enso.headroom` and refreshed automatically.
 
 **Claude.** Click *Sign in to Claude*. Your browser opens claude.ai; after you
-authorize, Anthropic shows a code. Paste it into the widget and press *Continue*.
+authorize, Anthropic shows a code and tells you to paste it into Claude Code.
+Paste it into headroom instead and press *Continue*.
 
 **Codex.** Click *Sign in to Codex*. Your browser opens auth.openai.com and
 redirects back to `http://localhost:1455` when done. Nothing to paste.
 
-**Copilot.** Click *Sign in to Copilot*. The widget shows an 8-character code
-(also copied to your clipboard) and opens github.com/login/device. Enter the
-code there; the widget picks up the token by itself.
+**Copilot.** Click *Sign in to Copilot*. headroom shows an 8-character code
+(with a copy button; it is also put on your clipboard) and opens
+github.com/login/device. Enter the code there; headroom picks up the token by
+itself.
 
 Sign out with the door icon next to a provider. Signing out deletes the stored
 tokens.
@@ -73,7 +77,7 @@ the next check is due.
 
 ## How it works
 
-Both providers expose the usage numbers behind an OAuth token:
+All three providers expose the usage numbers behind an OAuth token:
 
 - Claude: `GET https://api.anthropic.com/api/oauth/usage`, the endpoint Claude
   Code uses for `/usage`. Sign-in is the same PKCE flow as Claude Code.
@@ -92,7 +96,10 @@ The app talks only to anthropic.com, claude.ai, openai.com, chatgpt.com and gith
 
 ## Release
 
-`make release` builds `build/headroom-<version>.dmg`. To make it installable
+`make release` builds `build/headroom-<version>.dmg`: the app and an
+Applications shortcut over `Resources/dmg-background.tiff`, laid out by Finder
+via `scripts/dmg-layout.applescript`. The icon and background are drawn by
+`scripts/artwork.swift`; `make artwork` regenerates them. To make it installable
 on other Macs it must be signed with a Developer ID and notarized. The script
 uses the Developer ID Application identity in your keychain if there is one;
 set `SIGN_IDENTITY` to choose explicitly. Notarization runs when
@@ -144,6 +151,7 @@ make build   # debug build
 make test    # checks: refresh policy, response parsing, PKCE (no Xcode needed)
 make app     # release build + app bundle in build/
 make release # DMG, signed and notarized when SIGN_IDENTITY/NOTARY_PROFILE are set
+make artwork # regenerate Resources/headroom.icns and the DMG background
 swift run HeadroomChecks --live   # also fetch and print usage for signed-in providers
 ```
 
@@ -155,7 +163,7 @@ Sources/HeadroomCore/
   Auth/        PKCE, JWT claims, keychain store, localhost callback server
   Providers/   ClaudeService, CodexService, CopilotService, shared HTTP helpers
   Scheduler/   RefreshPolicy (pure), ProviderMonitor (state + polling loop)
-  UI/          MenuBarExtra app, popover, per-provider section, formatting
+  UI/          status item + popover (App), menu bar label, per-provider section, formatting
 Sources/headroom/        main.swift, launches the app
 Sources/HeadroomChecks/  check runner used by `make test`
 ```

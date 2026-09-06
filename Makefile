@@ -1,4 +1,4 @@
-.PHONY: build test app run install release clean
+.PHONY: build test app run install release artwork clean
 
 build:
 	swift build
@@ -14,6 +14,9 @@ run: app
 
 release:
 	scripts/release.sh
+
+artwork:
+	scripts/artwork.sh
 
 install: app
 	rm -rf /Applications/headroom.app

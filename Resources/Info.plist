@@ -8,6 +8,8 @@
     <string>headroom</string>
     <key>CFBundleIdentifier</key>
     <string>no.enso.headroom</string>
+    <key>CFBundleIconFile</key>
+    <string>headroom</string>
     <key>CFBundleExecutable</key>
     <string>headroom</string>
     <key>CFBundlePackageType</key>

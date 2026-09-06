@@ -8,9 +8,10 @@ cd "$(dirname "$0")/.."
 swift build -c release --product headroom
 APP=build/headroom.app
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/headroom "$APP/Contents/MacOS/"
 cp Resources/Info.plist "$APP/Contents/"
+cp Resources/headroom.icns "$APP/Contents/Resources/"
 if [ -n "${VERSION:-}" ]; then
     /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" -c "Set CFBundleVersion $VERSION" "$APP/Contents/Info.plist"
 fi

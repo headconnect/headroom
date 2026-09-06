@@ -16,12 +16,25 @@ scripts/bundle.sh
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' build/headroom.app/Contents/Info.plist)
 DMG="build/headroom-$VERSION.dmg"
 STAGING=build/dmg
-rm -rf "$STAGING" "$DMG"
-mkdir -p "$STAGING"
+RW=build/headroom-rw.dmg
+rm -rf "$STAGING" "$DMG" "$RW"
+mkdir -p "$STAGING/.background"
 cp -R build/headroom.app "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
-hdiutil create -quiet -volname "headroom" -srcfolder "$STAGING" -format UDZO "$DMG"
+cp Resources/dmg-background.tiff "$STAGING/.background/background.tiff"
+cp Resources/headroom.icns "$STAGING/.VolumeIcon.icns"
+hdiutil create -quiet -volname headroom -srcfolder "$STAGING" -format UDRW -ov "$RW"
 rm -rf "$STAGING"
+
+# Mount it and let Finder lay out the window (background, icon positions) into its .DS_Store.
+MOUNT=$(hdiutil attach -readwrite -noverify -noautoopen -nobrowse "$RW" | sed -n 's|.*\(/Volumes/.*\)|\1|p')
+SetFile -a C "$MOUNT"
+sleep 1
+osascript scripts/dmg-layout.applescript "$(basename "$MOUNT")" || echo "warning: Finder layout failed; DMG will use the default window"
+sync
+hdiutil detach -quiet "$MOUNT"
+hdiutil convert -quiet -format UDZO -o "$DMG" "$RW"
+rm -f "$RW"
 
 if [ "$SIGN_IDENTITY" = "-" ]; then
     echo "Built $DMG (ad-hoc signed, not notarized; Gatekeeper will block it on other Macs)"
