@@ -4,6 +4,7 @@ struct ProviderSection: View {
     let monitor: ProviderMonitor
     let now: Date
     @State private var pastedCode = ""
+    @State private var copied = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -51,11 +52,11 @@ struct ProviderSection: View {
                     HStack {
                         Text(window.label)
                         Spacer()
-                        Text("\(Int(window.percentUsed.rounded()))% used").monospacedDigit()
+                        Text("\(Format.percent(window.percentUsed)) used").monospacedDigit()
                     }
                     .font(.callout)
                     ProgressView(value: window.percentUsed, total: 100)
-                        .tint(tint(for: window.percentUsed))
+                        .tint(Format.tint(window.percentUsed))
                     let caption = [window.resetsAt.map { "Resets in \(Format.countdown(to: $0, from: now))" }, window.detail]
                         .compactMap { $0 }.joined(separator: " · ")
                     if !caption.isEmpty {
@@ -74,10 +75,10 @@ struct ProviderSection: View {
         if let pending = monitor.pendingSignIn {
             switch pending.mode {
             case .pastedCode:
-                Text("Authorize in the browser, then paste the code shown:")
+                Text("Authorize in the browser. The page then shows a code and says to paste it into Claude Code; paste it here instead:")
                     .font(.caption).foregroundStyle(.secondary)
                 HStack {
-                    TextField("code#state", text: $pastedCode)
+                    TextField("Code from the browser", text: $pastedCode)
                         .textFieldStyle(.roundedBorder)
                         .onSubmit(submitCode)
                     Button("Continue", action: submitCode).disabled(pastedCode.isEmpty)
@@ -85,9 +86,18 @@ struct ProviderSection: View {
                 }
                 .font(.callout)
             case .deviceCode(let code):
-                Text("Enter this code on the GitHub page that opened (it is on your clipboard):")
+                Text("Enter this code on the GitHub page that opened:")
                     .font(.caption).foregroundStyle(.secondary)
-                waiting(label: code)
+                HStack {
+                    ProgressView().controlSize(.small)
+                    Text(code).font(.system(.title3, design: .monospaced)).textSelection(.enabled)
+                    Button { copy(code) } label: { Image(systemName: copied ? "checkmark" : "doc.on.doc") }
+                        .buttonStyle(.borderless)
+                        .help("Copy code")
+                    Spacer()
+                    Button("Cancel") { monitor.cancelSignIn() }
+                }
+                .font(.callout)
             case .callback:
                 waiting(label: "Waiting for the browser…")
             }
@@ -105,6 +115,13 @@ struct ProviderSection: View {
         }
     }
 
+    private func copy(_ code: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(code, forType: .string)
+        copied = true
+        Task { try? await Task.sleep(for: .seconds(2)); copied = false }
+    }
+
     private func submitCode() {
         monitor.submitPastedCode(pastedCode)
         pastedCode = ""
@@ -118,11 +135,4 @@ struct ProviderSection: View {
         return parts.joined(separator: " · ")
     }
 
-    private func tint(for percent: Double) -> Color {
-        switch percent {
-        case ..<70: .green
-        case ..<90: .orange
-        default: .red
-        }
-    }
 }

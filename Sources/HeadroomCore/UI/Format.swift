@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 enum Format {
     /// "4h 36m", "6d 5h", "12m", or "now".
@@ -22,6 +22,17 @@ enum Format {
         case ..<1: return "just now"
         case ..<60: return "\(minutes)m ago"
         default: return "\(minutes / 60)h ago"
+        }
+    }
+
+    static func percent(_ value: Double) -> String { "\(Int(value.rounded()))%" }
+
+    /// Green until 70 % used, orange until 90 %, then red.
+    static func tint(_ percent: Double) -> Color {
+        switch percent {
+        case ..<70: .green
+        case ..<90: .orange
+        default: .red
         }
     }
 }
