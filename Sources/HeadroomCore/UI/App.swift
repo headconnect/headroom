@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Pinned to the button's trailing edge, which stays put when the label
     /// changes width, so the popover does not move with it.
     private let anchor = PassthroughView()
+    private var windowObservers: [NSObjectProtocol] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard let button = statusItem.button else { return }
@@ -54,9 +55,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if popover.isShown {
             popover.performClose(nil)
         } else {
+            observeStatusWindow()
             popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
             NSApp.activate(ignoringOtherApps: true)
             popover.contentViewController?.view.window?.makeKey()
+        }
+    }
+
+    /// The popover follows the status item's window when it is resized but not
+    /// when the menu bar then shifts it to keep the right edge in place, so it
+    /// is re-anchored after both.
+    private func observeStatusWindow() {
+        guard windowObservers.isEmpty, let window = statusItem.button?.window else { return }
+        for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification] {
+            windowObservers.append(NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, self.popover.isShown else { return }
+                    self.popover.show(relativeTo: self.anchor.bounds, of: self.anchor, preferredEdge: .minY)
+                }
+            })
         }
     }
 }
