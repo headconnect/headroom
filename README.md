@@ -105,6 +105,23 @@ One-time setup with an Apple Developer account:
 Without `SIGN_IDENTITY` the DMG is ad-hoc signed and only runs on the building
 Mac. Signing with a Developer ID also stops the keychain prompt after rebuilds.
 
+### GitHub Actions
+
+`.github/workflows/release.yml` does the same on a macOS runner, on every
+`v*` tag (attaching the DMG to a GitHub Release) or by hand from the Actions
+tab (DMG as a build artifact). It needs four repository secrets:
+
+| Secret | Value |
+|---|---|
+| `MACOS_CERTIFICATE_P12` | Developer ID identity exported as PKCS#12, base64-encoded |
+| `MACOS_CERTIFICATE_PASSWORD` | password of that PKCS#12 file |
+| `NOTARY_APPLE_ID` | Apple ID email of the developer account |
+| `NOTARY_PASSWORD` | app-specific password for that Apple ID |
+
+Export the identity from Keychain Access (right-click the certificate →
+Export) or with `security export -t identities -f pkcs12`, then
+`base64 -i cert.p12 | gh secret set MACOS_CERTIFICATE_P12`.
+
 ## Development
 
 ```sh

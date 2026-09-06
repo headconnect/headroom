@@ -1,7 +1,8 @@
 #!/bin/sh
 # Builds a signed app, packs it into a DMG, and notarizes it.
 #   SIGN_IDENTITY   "Developer ID Application: Name (TEAMID)"; defaults to the one in your keychain, else ad-hoc
-#   NOTARY_PROFILE  notarytool keychain profile name; skip notarization if unset
+#   NOTARY_PROFILE  notarytool keychain profile name, or
+#   NOTARY_APPLE_ID + NOTARY_PASSWORD + NOTARY_TEAM_ID for CI; notarization is skipped if neither is set
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -27,11 +28,14 @@ if [ "$SIGN_IDENTITY" = "-" ]; then
 fi
 codesign --sign "$SIGN_IDENTITY" --timestamp "$DMG"
 
-if [ -z "${NOTARY_PROFILE:-}" ]; then
+if [ -n "${NOTARY_PROFILE:-}" ]; then
+    xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+elif [ -n "${NOTARY_APPLE_ID:-}" ]; then
+    xcrun notarytool submit "$DMG" --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --wait
+else
     echo "Built $DMG (signed, not notarized; set NOTARY_PROFILE to notarize)"
     exit 0
 fi
-xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$DMG"
 spctl -a -t open --context context:primary-signature -v "$DMG"
 echo "Built $DMG (signed and notarized)"
