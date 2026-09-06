@@ -11,10 +11,8 @@ as the usage pages on claude.ai, chatgpt.com and github.com.
 Menu bar: `A ▤ 12%/4%  O ▤ 77%/47%  G ▤ 18%`, one entry per provider, tagged
 by vendor (Anthropic, OpenAI, GitHub): a mini bar per limit and the percentages,
 short-term window first (session/weekly). Bars turn orange at 70 % and red at 90 %.
-The gear in the popover chooses bars and/or percentages, session and/or weekly,
-the popover opacity, launch at login, and an optional update check.
 
-![headroom popover showing Claude, Codex and Copilot usage](docs/images/usage.jpeg)
+![headroom popover showing Claude, Codex and Copilot usage](docs/images/v1.1.0-screenie.png)
 
 ## Requirements
 
@@ -28,7 +26,7 @@ open it, and drag headroom into the Applications folder shown next to it. It's
 signed and notarized, so Gatekeeper lets it run without extra steps. Then open
 it from Applications or Spotlight; it appears in the menu bar, not the Dock.
 
-Tick "Launch at login" under the gear in the popover to keep it running.
+Tick "Launch at login" in the [settings](#settings) to keep it running.
 
 ### Build from source
 
@@ -60,6 +58,25 @@ itself.
 
 Sign out with the door icon next to a provider. Signing out deletes the stored
 tokens.
+
+## Settings
+
+The gear at the bottom of the popover opens the settings.
+
+![headroom popover with the settings open](docs/images/v1.1.0-screenie-settings.png)
+
+**Menu bar.** *Bars* and *Percentages* choose how each provider is shown; at
+least one stays on. *Session* and *Weekly* choose which limits are shown, for
+providers that have both. Copilot has a single quota and always shows it.
+
+**General.** *Popover opacity* runs from 50 % to fully opaque; the popover
+is translucent by default, and this keeps it readable over light windows.
+*Launch at login* registers the app with macOS. *Check for updates* is off by
+default; when on, headroom asks GitHub for the latest release every 6 hours
+and shows a link in the footer when it is newer than the running version.
+Nothing is downloaded or installed automatically.
+
+Settings are stored in the app's user defaults (`no.enso.headroom`).
 
 ## Refresh behaviour
 
