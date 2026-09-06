@@ -1,3 +1,3 @@
 import HeadroomCore
 
-HeadroomApp.main()
+MainActor.assumeIsolated { HeadroomApp.main() }

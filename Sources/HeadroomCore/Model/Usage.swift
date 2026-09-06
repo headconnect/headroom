@@ -24,8 +24,9 @@ struct UsageSnapshot: Equatable {
     let windows: [UsageWindow]
     let fetchedAt: Date
 
-    /// Highest utilisation across windows; the one that will bite first.
-    var peakPercent: Double? { windows.map(\.percentUsed).max() }
+    /// The short-term and long-term limits, e.g. the 5-hour session and the
+    /// weekly cap; per-model and overage windows are left to the popover.
+    var headline: ArraySlice<UsageWindow> { windows.prefix(2) }
 
     var earliestReset: Date? { windows.compactMap(\.resetsAt).min() }
 
