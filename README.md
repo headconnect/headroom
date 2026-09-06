@@ -1,4 +1,4 @@
-# Usage Widget
+# headroom
 
 macOS menu bar app showing your Claude, Codex and GitHub Copilot plan usage
 with reset countdowns: the 5-hour session and weekly windows for Claude and
@@ -17,8 +17,8 @@ tagged by vendor (Anthropic, OpenAI, GitHub).
 ## Install
 
 ```sh
-make install   # builds build/UsageWidget.app and copies it to /Applications
-open /Applications/UsageWidget.app
+make install   # builds build/headroom.app and copies it to /Applications
+open /Applications/headroom.app
 ```
 
 `make run` builds and launches without installing. Tick "Launch at login" in the
@@ -27,7 +27,7 @@ popover to keep it running.
 ## Sign in
 
 Each provider is signed in separately. Tokens are stored in your login keychain
-under the service `no.enso.UsageWidget` and refreshed automatically.
+under the service `no.enso.headroom` and refreshed automatically.
 
 **Claude.** Click *Sign in to Claude*. Your browser opens claude.ai; after you
 authorize, Anthropic shows a code. Paste it into the widget and press *Continue*.
@@ -79,14 +79,14 @@ The app talks only to anthropic.com, claude.ai, openai.com, chatgpt.com and gith
 
 ## Release
 
-`make release` builds `build/UsageWidget-<version>.dmg`. To make it installable
+`make release` builds `build/headroom-<version>.dmg`. To make it installable
 on other Macs it must be signed with a Developer ID and notarized. The script
 uses the Developer ID Application identity in your keychain if there is one;
 set `SIGN_IDENTITY` to choose explicitly. Notarization runs when
 `NOTARY_PROFILE` is set:
 
 ```sh
-NOTARY_PROFILE=UsageWidget make release
+NOTARY_PROFILE=headroom make release
 ```
 
 One-time setup with an Apple Developer account:
@@ -98,7 +98,7 @@ One-time setup with an Apple Developer account:
    double-click it. `security find-identity -v -p codesigning` then lists it.
 2. Create an app-specific password at account.apple.com and store it:
    ```sh
-   xcrun notarytool store-credentials UsageWidget \
+   xcrun notarytool store-credentials headroom \
        --apple-id you@example.com --team-id TEAMID
    ```
 
@@ -109,7 +109,7 @@ Mac. Signing with a Developer ID also stops the keychain prompt after rebuilds.
 
 `.github/workflows/release.yml` does the same on a macOS runner, on every
 `v*` tag (attaching the DMG to a GitHub Release) or by hand from the Actions
-tab (DMG as a build artifact). A tag `v1.2` produces `UsageWidget-1.2.dmg`
+tab (DMG as a build artifact). A tag `v1.2` produces `headroom-1.2.dmg`
 with that version stamped into the app; manual runs use the version in
 `Resources/Info.plist`. It needs four repository secrets:
 
@@ -131,20 +131,20 @@ make build   # debug build
 make test    # checks: refresh policy, response parsing, PKCE (no Xcode needed)
 make app     # release build + app bundle in build/
 make release # DMG, signed and notarized when SIGN_IDENTITY/NOTARY_PROFILE are set
-swift run UsageWidgetChecks --live   # also fetch and print usage for signed-in providers
+swift run HeadroomChecks --live   # also fetch and print usage for signed-in providers
 ```
 
 Layout:
 
 ```
-Sources/UsageWidgetCore/
+Sources/HeadroomCore/
   Model/       Provider, UsageWindow/UsageSnapshot, OAuthTokens, errors
   Auth/        PKCE, JWT claims, keychain store, localhost callback server
   Providers/   ClaudeService, CodexService, CopilotService, shared HTTP helpers
   Scheduler/   RefreshPolicy (pure), ProviderMonitor (state + polling loop)
   UI/          MenuBarExtra app, popover, per-provider section, formatting
-Sources/UsageWidget/        main.swift, launches the app
-Sources/UsageWidgetChecks/  check runner used by `make test`
+Sources/headroom/        main.swift, launches the app
+Sources/HeadroomChecks/  check runner used by `make test`
 ```
 
 Development builds are ad-hoc signed, so each build has a new signature and

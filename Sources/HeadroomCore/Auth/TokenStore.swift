@@ -3,7 +3,7 @@ import Security
 
 /// Persists tokens in the login keychain, one item per provider.
 enum TokenStore {
-    private static let service = "no.enso.UsageWidget"
+    private static let service = "no.enso.headroom"
 
     static func load(_ provider: Provider) -> OAuthTokens? {
         var query = baseQuery(provider)

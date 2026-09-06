@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "UsageWidget",
+    name: "headroom",
     platforms: [.macOS(.v14)],
     targets: [
-        .target(name: "UsageWidgetCore"),
-        .executableTarget(name: "UsageWidget", dependencies: ["UsageWidgetCore"]),
+        .target(name: "HeadroomCore"),
+        .executableTarget(name: "headroom", dependencies: ["HeadroomCore"]),
         // Checks run via `swift run`; XCTest and Swift Testing need Xcode, which
         // the Command Line Tools alone do not provide.
-        .executableTarget(name: "UsageWidgetChecks", dependencies: ["UsageWidgetCore"]),
+        .executableTarget(name: "HeadroomChecks", dependencies: ["HeadroomCore"]),
     ]
 )

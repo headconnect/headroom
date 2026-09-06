@@ -1,7 +1,7 @@
-// Minimal check runner: `swift run UsageWidgetChecks`. Exits non-zero on failure.
+// Minimal check runner: `swift run HeadroomChecks`. Exits non-zero on failure.
 // `--live` additionally fetches usage for every signed-in provider and prints it.
 import Foundation
-@testable import UsageWidgetCore
+@testable import HeadroomCore
 
 var failures = 0
 

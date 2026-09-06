@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct UsageWidgetApp: App {
+public struct HeadroomApp: App {
     @State private var monitors = Provider.allCases.map { ProviderMonitor(provider: $0) }
 
     public init() {}

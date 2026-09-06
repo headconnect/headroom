@@ -1,3 +1,0 @@
-import UsageWidgetCore
-
-UsageWidgetApp.main()

@@ -13,14 +13,14 @@ fi
 export SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 scripts/bundle.sh
 
-VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' build/UsageWidget.app/Contents/Info.plist)
-DMG="build/UsageWidget-$VERSION.dmg"
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' build/headroom.app/Contents/Info.plist)
+DMG="build/headroom-$VERSION.dmg"
 STAGING=build/dmg
 rm -rf "$STAGING" "$DMG"
 mkdir -p "$STAGING"
-cp -R build/UsageWidget.app "$STAGING/"
+cp -R build/headroom.app "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
-hdiutil create -quiet -volname "Usage Widget" -srcfolder "$STAGING" -format UDZO "$DMG"
+hdiutil create -quiet -volname "headroom" -srcfolder "$STAGING" -format UDZO "$DMG"
 rm -rf "$STAGING"
 
 if [ "$SIGN_IDENTITY" = "-" ]; then

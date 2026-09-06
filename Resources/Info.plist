@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>UsageWidget</string>
+    <string>headroom</string>
     <key>CFBundleDisplayName</key>
-    <string>Usage Widget</string>
+    <string>headroom</string>
     <key>CFBundleIdentifier</key>
-    <string>no.enso.UsageWidget</string>
+    <string>no.enso.headroom</string>
     <key>CFBundleExecutable</key>
-    <string>UsageWidget</string>
+    <string>headroom</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

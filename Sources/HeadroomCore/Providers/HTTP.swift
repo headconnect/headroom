@@ -1,7 +1,7 @@
 import Foundation
 
 enum HTTP {
-    static let userAgent = "UsageWidget/1.0 (macOS)"
+    static let userAgent = "headroom/1.0 (macOS)"
 
     static func get(_ url: URL, headers: [String: String]) async throws -> Data {
         var request = URLRequest(url: url)

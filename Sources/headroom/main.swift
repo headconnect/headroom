@@ -1,0 +1,3 @@
+import HeadroomCore
+
+HeadroomApp.main()
