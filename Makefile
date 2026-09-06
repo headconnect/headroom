@@ -1,4 +1,4 @@
-.PHONY: build test app run install clean
+.PHONY: build test app run install release clean
 
 build:
 	swift build
@@ -11,6 +11,9 @@ app:
 
 run: app
 	open build/UsageWidget.app
+
+release:
+	scripts/release.sh
 
 install: app
 	rm -rf /Applications/UsageWidget.app

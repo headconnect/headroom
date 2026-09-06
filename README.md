@@ -77,12 +77,41 @@ keys are shown only when they have a reset time.
 
 The app talks only to anthropic.com, claude.ai, openai.com, chatgpt.com and github.com.
 
+## Release
+
+`make release` builds `build/UsageWidget-<version>.dmg`. To make it installable
+on other Macs it must be signed with a Developer ID and notarized, which needs
+two environment variables:
+
+```sh
+export SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+export NOTARY_PROFILE=UsageWidget
+make release
+```
+
+One-time setup with an Apple Developer account:
+
+1. Create a *Developer ID Application* certificate at
+   developer.apple.com/account/resources/certificates. Generate the signing
+   request in Keychain Access (Certificate Assistant → Request a Certificate
+   From a Certificate Authority), upload it, download the certificate and
+   double-click it. `security find-identity -v -p codesigning` then lists it.
+2. Create an app-specific password at account.apple.com and store it:
+   ```sh
+   xcrun notarytool store-credentials UsageWidget \
+       --apple-id you@example.com --team-id TEAMID
+   ```
+
+Without `SIGN_IDENTITY` the DMG is ad-hoc signed and only runs on the building
+Mac. Signing with a Developer ID also stops the keychain prompt after rebuilds.
+
 ## Development
 
 ```sh
 make build   # debug build
 make test    # checks: refresh policy, response parsing, PKCE (no Xcode needed)
 make app     # release build + app bundle in build/
+make release # DMG, signed and notarized when SIGN_IDENTITY/NOTARY_PROFILE are set
 swift run UsageWidgetChecks --live   # also fetch and print usage for signed-in providers
 ```
 
@@ -99,5 +128,5 @@ Sources/UsageWidget/        main.swift, launches the app
 Sources/UsageWidgetChecks/  check runner used by `make test`
 ```
 
-The app bundle is ad-hoc signed. Because each build has a new signature, macOS
-may ask for keychain access once after rebuilding; choose *Always Allow*.
+Development builds are ad-hoc signed, so each build has a new signature and
+macOS may ask for keychain access once after rebuilding; choose *Always Allow*.
