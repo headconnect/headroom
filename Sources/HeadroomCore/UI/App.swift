@@ -18,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
     private let updates = UpdateChecker()
+    /// Pinned to the button's trailing edge, which stays put when the label
+    /// changes width, so the popover does not move with it.
+    private let anchor = PassthroughView()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard let button = statusItem.button else { return }
@@ -25,12 +28,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             statusItem.length = width
         })
         label.translatesAutoresizingMaskIntoConstraints = false
+        anchor.translatesAutoresizingMaskIntoConstraints = false
         button.addSubview(label)
+        button.addSubview(anchor)
         NSLayoutConstraint.activate([
             label.leadingAnchor.constraint(equalTo: button.leadingAnchor),
             label.trailingAnchor.constraint(equalTo: button.trailingAnchor),
             label.topAnchor.constraint(equalTo: button.topAnchor),
             label.bottomAnchor.constraint(equalTo: button.bottomAnchor),
+            anchor.trailingAnchor.constraint(equalTo: button.trailingAnchor),
+            anchor.topAnchor.constraint(equalTo: button.topAnchor),
+            anchor.bottomAnchor.constraint(equalTo: button.bottomAnchor),
+            anchor.widthAnchor.constraint(equalToConstant: 24),
         ])
         button.target = self
         button.action = #selector(togglePopover)
@@ -42,18 +51,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func togglePopover() {
-        guard let button = statusItem.button else { return }
         if popover.isShown {
             popover.performClose(nil)
         } else {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
             NSApp.activate(ignoringOtherApps: true)
             popover.contentViewController?.view.window?.makeKey()
         }
     }
 }
 
-/// Lets clicks fall through to the status bar button underneath.
+// Both let clicks fall through to the status bar button underneath.
+
 private final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+private final class PassthroughView: NSView {
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }
