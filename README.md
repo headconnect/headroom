@@ -26,6 +26,12 @@ open it, and drag headroom into the Applications folder shown next to it. It's
 signed and notarized, so Gatekeeper lets it run without extra steps. Then open
 it from Applications or Spotlight; it appears in the menu bar, not the Dock.
 
+Or with [Homebrew](https://brew.sh):
+
+```sh
+brew install headconnect/tap/headroom
+```
+
 Tick "Launch at login" in the [settings](#settings) to keep it running.
 
 ### Build from source
@@ -153,7 +159,10 @@ Mac. Signing with a Developer ID also stops the keychain prompt after rebuilds.
 `v*` tag (attaching the DMG to a GitHub Release) or by hand from the Actions
 tab (DMG as a build artifact). A tag `v1.2` produces `headroom-1.2.dmg`
 with that version stamped into the app; manual runs use the version in
-`Resources/Info.plist`. It needs four repository secrets:
+`Resources/Info.plist`. After a tagged release it also bumps the cask in
+[headconnect/homebrew-tap](https://github.com/headconnect/homebrew-tap) via
+`scripts/bump-cask.sh`, when `TAP_GITHUB_TOKEN` is set. It needs these
+repository secrets:
 
 | Secret | Value |
 |---|---|
@@ -161,6 +170,7 @@ with that version stamped into the app; manual runs use the version in
 | `MACOS_CERTIFICATE_PASSWORD` | password of that PKCS#12 file |
 | `NOTARY_APPLE_ID` | Apple ID email of the developer account |
 | `NOTARY_PASSWORD` | app-specific password for that Apple ID |
+| `TAP_GITHUB_TOKEN` | fine-grained PAT with *Contents: read and write* on `headconnect/homebrew-tap` (optional) |
 
 Export the identity from Keychain Access (right-click the certificate →
 Export) or with `security export -t identities -f pkcs12`, then
