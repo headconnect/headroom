@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-Use the private vulnerability reporting feature in github to report a vulnerability. 
+Use [GitHub's private vulnerability reporting](https://github.com/headconnect/headroom/security/advisories/new) to report a vulnerability. Please do not open a public issue for it.
 
 ## Scope
 
