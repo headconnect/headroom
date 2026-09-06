@@ -163,6 +163,10 @@ Sources/HeadroomChecks/  check runner used by `make test`
 Development builds are ad-hoc signed, so each build has a new signature and
 macOS may ask for keychain access once after rebuilding; choose *Always Allow*.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+
 ## License
 
 [MIT](LICENSE)
