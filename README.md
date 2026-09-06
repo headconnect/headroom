@@ -109,7 +109,9 @@ Mac. Signing with a Developer ID also stops the keychain prompt after rebuilds.
 
 `.github/workflows/release.yml` does the same on a macOS runner, on every
 `v*` tag (attaching the DMG to a GitHub Release) or by hand from the Actions
-tab (DMG as a build artifact). It needs four repository secrets:
+tab (DMG as a build artifact). A tag `v1.2` produces `UsageWidget-1.2.dmg`
+with that version stamped into the app; manual runs use the version in
+`Resources/Info.plist`. It needs four repository secrets:
 
 | Secret | Value |
 |---|---|

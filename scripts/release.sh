@@ -1,5 +1,6 @@
 #!/bin/sh
 # Builds a signed app, packs it into a DMG, and notarizes it.
+#   VERSION         app version, e.g. 1.2; defaults to the one in Resources/Info.plist
 #   SIGN_IDENTITY   "Developer ID Application: Name (TEAMID)"; defaults to the one in your keychain, else ad-hoc
 #   NOTARY_PROFILE  notarytool keychain profile name, or
 #   NOTARY_APPLE_ID + NOTARY_PASSWORD + NOTARY_TEAM_ID for CI; notarization is skipped if neither is set
@@ -12,7 +13,7 @@ fi
 export SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 scripts/bundle.sh
 
-VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Resources/Info.plist)
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' build/UsageWidget.app/Contents/Info.plist)
 DMG="build/UsageWidget-$VERSION.dmg"
 STAGING=build/dmg
 rm -rf "$STAGING" "$DMG"

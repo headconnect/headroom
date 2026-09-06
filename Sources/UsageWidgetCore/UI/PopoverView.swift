@@ -18,6 +18,9 @@ struct PopoverView: View {
                         .toggleStyle(.checkbox)
                         .onChange(of: launchAtLogin) { _, enabled in setLaunchAtLogin(enabled) }
                     Spacer()
+                    if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+                        Text("v\(version)").font(.caption).foregroundStyle(.tertiary)
+                    }
                     Button("Quit") { NSApplication.shared.terminate(nil) }
                 }
                 .font(.callout)

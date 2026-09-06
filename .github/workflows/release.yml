@@ -41,7 +41,9 @@ jobs:
         run: make test
 
       - name: Build, sign, notarize
-        run: scripts/release.sh
+        run: |
+          case "$GITHUB_REF" in refs/tags/v*) export VERSION="${GITHUB_REF_NAME#v}";; esac
+          scripts/release.sh
 
       - uses: actions/upload-artifact@v4
         with:
