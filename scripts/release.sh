@@ -37,6 +37,11 @@ else
     echo "Built $DMG (signed, not notarized; set NOTARY_PROFILE to notarize)"
     exit 0
 fi
-xcrun stapler staple "$DMG"
+# The ticket can take a moment to propagate after acceptance; retry the staple.
+for attempt in 1 2 3 4 5 6; do
+    xcrun stapler staple "$DMG" && break
+    [ "$attempt" = 6 ] && exit 1
+    sleep 10
+done
 spctl -a -t open --context context:primary-signature -v "$DMG"
 echo "Built $DMG (signed and notarized)"
