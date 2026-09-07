@@ -1,5 +1,6 @@
 // Minimal check runner: `swift run HeadroomChecks`. Exits non-zero on failure.
-// `--live` additionally fetches usage for every signed-in provider and prints it.
+// `--live` additionally fetches usage for every signed-in account and prints it.
+import AppKit
 import Foundation
 @testable import HeadroomCore
 
@@ -120,6 +121,22 @@ check("change detection ignores sub-second jitter") {
     return !second.hasChanges(since: first) && first.hasChanges(since: nil)
 }
 
+check("moving an account clamps at the ends") {
+    let accounts = [Account(provider: .claude, tag: "A"), Account(provider: .codex, tag: "O"), Account(provider: .copilot, tag: "G")]
+    return Account.moved(accounts, at: 2, by: -1).map(\.tag) == ["A", "G", "O"]
+        && Account.moved(accounts, at: 0, by: -1).map(\.tag) == ["A", "O", "G"]
+        && Account.moved(accounts, at: 1, by: 5).map(\.tag) == ["A", "G", "O"]
+        && Account.moved(accounts, at: 7, by: 1).map(\.tag) == ["A", "O", "G"]
+}
+
+check("account icon is scaled to menu bar height") {
+    let image = NSImage(size: NSSize(width: 100, height: 50), flipped: false) { rect in
+        NSColor.red.setFill(); rect.fill(); return true
+    }
+    guard let data = AccountIcon.png(image), let rep = NSBitmapImageRep(data: data) else { return false }
+    return rep.pixelsHigh == 32 && rep.pixelsWide == 64 && data.count < 2_000
+}
+
 // MARK: Auth helpers
 
 check("pkce challenge matches RFC 7636 vector") {
@@ -148,23 +165,101 @@ check("countdown formatting") {
         && Format.countdown(to: now, from: now) == "now"
 }
 
+// MARK: Accounts
+
+check("vault json is keyed by account id and round trips") {
+    let id = UUID()
+    let tokens = OAuthTokens(accessToken: "a", refreshToken: "r", expiresAt: Date(timeIntervalSince1970: 100),
+                             account: "me@example.com", accountID: "acc")
+    let data = try JSONEncoder().encode(TokenStore.Vault([id: tokens]))
+    let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    let decoded = try JSONDecoder().decode(TokenStore.Vault.self, from: data)
+    return json?["version"] as? Int == 1
+        && (json?["tokens"] as? [String: Any])?.keys.sorted() == [id.uuidString]
+        && decoded.byAccount == [id: tokens]
+}
+
+check("vault drops entries that are not account ids") {
+    let json = #"{"version": 1, "tokens": {"claude": {"accessToken": "a"}}}"#
+    return try JSONDecoder().decode(TokenStore.Vault.self, from: Data(json.utf8)).byAccount.isEmpty
+}
+
+check("migration turns legacy items into tagged accounts") {
+    let legacy: [LegacyMigration.Legacy] = [
+        (provider: .claude, tokens: OAuthTokens(accessToken: "c", refreshToken: nil, expiresAt: nil, account: nil, accountID: nil)),
+        (provider: .copilot, tokens: OAuthTokens(accessToken: "g", refreshToken: nil, expiresAt: nil, account: nil, accountID: nil)),
+    ]
+    let (accounts, vault) = LegacyMigration.fold(legacy)
+    return accounts.map(\.provider) == [.claude, .copilot]
+        && accounts.map(\.tag) == ["A", "G"]
+        && vault[accounts[0].id]?.accessToken == "c"
+        && vault[accounts[1].id]?.accessToken == "g"
+        && LegacyMigration.fold([]).accounts.isEmpty
+}
+
+check("tag is trimmed, capped at three clusters and falls back") {
+    Account.normalized(tag: "  hi  ", provider: .claude) == "hi"
+        && Account.normalized(tag: "abcde", provider: .claude) == "abc"
+        && Account.normalized(tag: "   ", provider: .codex) == "O"
+        && Account.normalized(tag: "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}x", provider: .claude).count == 2
+}
+
+check("second account of a provider is numbered") {
+    let first = Account(provider: .claude, tag: Account.defaultTag(for: .claude, existing: []))
+    let second = Account(provider: .claude, tag: Account.defaultTag(for: .claude, existing: [first]))
+    return first.tag == "A" && second.tag == "A2"
+        && Account.defaultTag(for: .claude, existing: [second]) == "A"
+        && Account.defaultTag(for: .codex, existing: [first, second]) == "O"
+}
+
+check("menu bar options follow the globals unless overridden") {
+    let globals = MenuBarOptions(bars: false, percent: true, session: true, weekly: false)
+    var account = Account(provider: .claude, tag: "A")
+    let followed = MenuBarOptions.resolve(for: account, global: globals)
+    account.menuBar = MenuBarOptions(bars: true, percent: false, session: false, weekly: true)
+    return followed == globals && MenuBarOptions.resolve(for: account, global: globals) == account.menuBar
+}
+
+check("menu bar options keep one of each pair") {
+    MenuBarOptions(bars: false, percent: false, session: false, weekly: false).paired == MenuBarOptions()
+        && !MenuBarOptions(bars: false, percent: true, session: true, weekly: true).paired.bars
+}
+
+check("global menu bar options default to on") {
+    let suite = "no.enso.headroom.checks"
+    let defaults = UserDefaults(suiteName: suite)!
+    defaults.removePersistentDomain(forName: suite)
+    let fresh = MenuBarOptions.global(defaults)
+    defaults.set(false, forKey: Settings.menuBarWeekly)
+    let edited = MenuBarOptions.global(defaults)
+    defaults.removePersistentDomain(forName: suite)
+    return fresh == MenuBarOptions() && !edited.weekly && edited.session
+}
+
 // MARK: Live (optional)
 
 if CommandLine.arguments.contains("--live") {
-    for provider in Provider.allCases {
-        guard let tokens = TokenStore.load(provider) else {
-            print("--   \(provider.name): not signed in")
+    // Read-only on purpose: an AccountStore here would start polling loops that
+    // refresh tokens and rewrite the vault behind the running app's back.
+    let defaults = UserDefaults(suiteName: "no.enso.headroom") ?? .standard
+    let stored = defaults.data(forKey: Settings.accounts) ?? Data()
+    let accounts = (try? JSONDecoder().decode([Account].self, from: stored)) ?? []
+    let vault = accounts.isEmpty ? [:] : ((try? TokenStore.load()) ?? [:])
+    for account in accounts {
+        let label = "\(account.tag) \(account.provider.name)"
+        guard let tokens = vault[account.id] else {
+            print("--   \(label): not signed in")
             continue
         }
         do {
-            let snapshot = try await provider.service.fetchUsage(tokens)
+            let snapshot = try await account.provider.service.fetchUsage(tokens)
             let summary = snapshot.windows.map { window in
                 let reset = window.resetsAt.map { " (resets in \(Format.countdown(to: $0, from: .now)))" } ?? ""
                 return "\(window.label) \(Int(window.percentUsed.rounded()))%\(reset)"
             }
-            print("ok   \(provider.name) [\(tokens.account ?? "?")]: \(summary.joined(separator: ", "))")
+            print("ok   \(label) [\(tokens.account ?? "?")]: \(summary.joined(separator: ", "))")
         } catch {
-            print("FAIL \(provider.name): \(error.localizedDescription)")
+            print("FAIL \(label): \(error.localizedDescription)")
             failures += 1
         }
     }

@@ -1,20 +1,20 @@
 import SwiftUI
 
-/// "A ▤ 12%/4%  O ▤ 77%/47%  G ▤ 18%": per signed-in provider, its tag, a
+/// "A ▤ 12%/4%  O ▤ 77%/47%  G ▤ 18%": per signed-in account, its tag, a
 /// mini bar per limit window and the percentages, short-term window first.
 /// Which parts appear is a user setting.
 struct MenuBarLabel: View {
-    let monitors: [ProviderMonitor]
+    let store: AccountStore
     /// Called with the rendered width so the status item can follow it.
     let onWidthChange: (CGFloat) -> Void
 
     var body: some View {
-        let active = monitors.filter(\.isSignedIn)
+        let active = store.monitors.filter(\.isSignedIn)
         HStack(spacing: 10) {
             if active.isEmpty {
                 Text("Headroom")
             } else {
-                ForEach(active) { ProviderGauge(monitor: $0) }
+                ForEach(active) { AccountGauge(monitor: $0) }
             }
         }
         .font(.system(size: 12).monospacedDigit())
@@ -24,26 +24,30 @@ struct MenuBarLabel: View {
     }
 }
 
-private struct ProviderGauge: View {
-    let monitor: ProviderMonitor
+private struct AccountGauge: View {
+    let monitor: AccountMonitor
     @AppStorage(Settings.menuBarBars) private var showBars = true
     @AppStorage(Settings.menuBarPercent) private var showPercent = true
     @AppStorage(Settings.menuBarSession) private var showSession = true
     @AppStorage(Settings.menuBarWeekly) private var showWeekly = true
 
     var body: some View {
+        let options = MenuBarOptions.resolve(
+            for: monitor.account,
+            global: MenuBarOptions(bars: showBars, percent: showPercent, session: showSession, weekly: showWeekly)
+        )
         HStack(spacing: 4) {
-            Text(monitor.provider.tag).fontWeight(.semibold)
-            let windows = selectedWindows
+            AccountLabel(account: monitor.account, height: 14)
+            let windows = selectedWindows(options)
             if windows.isEmpty {
                 Text("–")
             } else {
-                if showBars {
+                if options.bars {
                     VStack(spacing: 2) {
                         ForEach(windows) { MiniBar(percent: $0.percentUsed) }
                     }
                 }
-                if showPercent {
+                if options.percent {
                     Text(windows.map { Format.percent($0.percentUsed) }.joined(separator: "/"))
                 }
             }
@@ -52,10 +56,10 @@ private struct ProviderGauge: View {
 
     /// The headline windows the user wants; a provider with a single window
     /// (Copilot) always shows it.
-    private var selectedWindows: [UsageWindow] {
+    private func selectedWindows(_ options: MenuBarOptions) -> [UsageWindow] {
         let headline = Array(monitor.snapshot?.headline ?? [])
         guard headline.count > 1 else { return headline }
-        return headline.enumerated().filter { $0.offset == 0 ? showSession : showWeekly }.map(\.element)
+        return headline.enumerated().filter { $0.offset == 0 ? options.session : options.weekly }.map(\.element)
     }
 }
 

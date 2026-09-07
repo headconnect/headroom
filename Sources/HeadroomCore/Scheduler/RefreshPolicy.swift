@@ -1,6 +1,6 @@
 import Foundation
 
-/// Adaptive polling interval for one provider.
+/// Adaptive polling interval for one account.
 ///
 /// Starts at `base`. A fetch that shows changed numbers drops to `boost`; an
 /// unchanged fetch doubles the interval up to `max`. `reset()` returns to `base`.

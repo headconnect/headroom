@@ -1,4 +1,4 @@
-enum Provider: String, CaseIterable, Identifiable {
+enum Provider: String, CaseIterable, Codable, Identifiable {
     case claude
     case codex
     case copilot
@@ -13,7 +13,8 @@ enum Provider: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Menu bar tag, by vendor: Anthropic, OpenAI, GitHub.
+    /// Default menu bar tag, by vendor: Anthropic, OpenAI, GitHub. Accounts
+    /// start from this and the user can edit it.
     var tag: String {
         switch self {
         case .claude: "A"

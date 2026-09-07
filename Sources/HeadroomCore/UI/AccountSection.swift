@@ -1,10 +1,10 @@
 import SwiftUI
 
-struct ProviderSection: View {
-    let monitor: ProviderMonitor
+struct AccountSection: View {
+    let monitor: AccountMonitor
+    /// Only for the store-wide sign-in guard: one browser flow at a time.
+    let store: AccountStore
     let now: Date
-    @State private var pastedCode = ""
-    @State private var copied = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -22,9 +22,12 @@ struct ProviderSection: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
+            AccountLabel(account: monitor.account).font(.headline)
             Text(monitor.provider.name).font(.headline)
-            if let account = monitor.tokens?.account {
-                Text(account).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            let subtitle = [monitor.account.name, monitor.tokens?.account ?? ""]
+                .filter { !$0.isEmpty }.joined(separator: " · ")
+            if !subtitle.isEmpty {
+                Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
             if monitor.isSignedIn {
@@ -73,58 +76,10 @@ struct ProviderSection: View {
     @ViewBuilder
     private var signIn: some View {
         if let pending = monitor.pendingSignIn {
-            switch pending.mode {
-            case .pastedCode:
-                Text("Authorize in the browser. The page then shows a code and says to paste it into Claude Code; paste it here instead:")
-                    .font(.caption).foregroundStyle(.secondary)
-                HStack {
-                    TextField("Code from the browser", text: $pastedCode)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit(submitCode)
-                    Button("Continue", action: submitCode).disabled(pastedCode.isEmpty)
-                    Button("Cancel") { monitor.cancelSignIn() }
-                }
-                .font(.callout)
-            case .deviceCode(let code):
-                Text("Enter this code on the GitHub page that opened:")
-                    .font(.caption).foregroundStyle(.secondary)
-                HStack {
-                    ProgressView().controlSize(.small)
-                    Text(code).font(.system(.title3, design: .monospaced)).textSelection(.enabled)
-                    Button { copy(code) } label: { Image(systemName: copied ? "checkmark" : "doc.on.doc") }
-                        .buttonStyle(.borderless)
-                        .help("Copy code")
-                    Spacer()
-                    Button("Cancel") { monitor.cancelSignIn() }
-                }
-                .font(.callout)
-            case .callback:
-                waiting(label: "Waiting for the browser…")
-            }
+            SignInPending(monitor: monitor, pending: pending)
         } else {
-            Button("Sign in to \(monitor.provider.name)") { monitor.signIn() }
+            SignInButton(monitor: monitor, store: store)
         }
-    }
-
-    private func waiting(label: String) -> some View {
-        HStack {
-            ProgressView().controlSize(.small)
-            Text(label).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
-            Spacer()
-            Button("Cancel") { monitor.cancelSignIn() }
-        }
-    }
-
-    private func copy(_ code: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(code, forType: .string)
-        copied = true
-        Task { try? await Task.sleep(for: .seconds(2)); copied = false }
-    }
-
-    private func submitCode() {
-        monitor.submitPastedCode(pastedCode)
-        pastedCode = ""
     }
 
     private func schedule(_ snapshot: UsageSnapshot) -> String {

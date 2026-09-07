@@ -1,23 +1,68 @@
 import Foundation
 import Security
 
-/// Persists tokens in the login keychain, one item per provider.
+/// Every account's tokens in a single login keychain item, so adding an
+/// account never adds another keychain prompt.
 enum TokenStore {
     private static let service = "no.enso.headroom"
+    private static let vaultAccount = "accounts"
 
-    static func load(_ provider: Provider) -> OAuthTokens? {
-        var query = baseQuery(provider)
-        query[kSecReturnData] = true
-        query[kSecMatchLimit] = kSecMatchLimitOne
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
+    /// The stored JSON. `version` is there so a later format change can tell
+    /// what it is reading; the keys are account ids.
+    struct Vault: Codable, Equatable {
+        var version = 1
+        var tokens: [String: OAuthTokens]
+
+        init(_ tokens: [UUID: OAuthTokens]) {
+            self.tokens = Dictionary(uniqueKeysWithValues: tokens.map { ($0.key.uuidString, $0.value) })
+        }
+
+        /// Entries whose key is not an id belong to no account; drop them.
+        var byAccount: [UUID: OAuthTokens] {
+            Dictionary(uniqueKeysWithValues: tokens.compactMap { key, value in
+                UUID(uuidString: key).map { ($0, value) }
+            })
+        }
+    }
+
+    /// Throws when the item exists but could not be read (locked keychain, a
+    /// denied prompt): an empty vault there would be written back over every
+    /// account's tokens on the next save.
+    static func load() throws -> [UUID: OAuthTokens] {
+        guard let data = try read(vaultAccount),
+              let vault = try? JSONDecoder().decode(Vault.self, from: data) else { return [:] }
+        return vault.byAccount
+    }
+
+    static func save(_ tokens: [UUID: OAuthTokens]) throws {
+        try write(try JSONEncoder().encode(Vault(tokens)), to: vaultAccount)
+    }
+
+    /// Pre-vault items, one per provider; only the migration reads these.
+    static func loadLegacy(_ provider: Provider) throws -> OAuthTokens? {
+        guard let data = try read(provider.rawValue) else { return nil }
         return try? JSONDecoder().decode(OAuthTokens.self, from: data)
     }
 
-    static func save(_ tokens: OAuthTokens, for provider: Provider) throws {
-        let data = try JSONEncoder().encode(tokens)
-        let query = baseQuery(provider)
+    static func deleteLegacy(_ provider: Provider) {
+        SecItemDelete(baseQuery(provider.rawValue) as CFDictionary)
+    }
+
+    /// nil means the item is absent; any other failure throws, so callers can
+    /// tell "nothing stored" from "could not look".
+    private static func read(_ account: String) throws -> Data? {
+        var query = baseQuery(account)
+        query[kSecReturnData] = true
+        query[kSecMatchLimit] = kSecMatchLimitOne
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        if status == errSecItemNotFound { return nil }
+        try check(status)
+        return item as? Data
+    }
+
+    private static func write(_ data: Data, to account: String) throws {
+        let query = baseQuery(account)
         let status = SecItemUpdate(query as CFDictionary, [kSecValueData: data] as CFDictionary)
         if status == errSecItemNotFound {
             var add = query
@@ -28,12 +73,8 @@ enum TokenStore {
         }
     }
 
-    static func delete(_ provider: Provider) {
-        SecItemDelete(baseQuery(provider) as CFDictionary)
-    }
-
-    private static func baseQuery(_ provider: Provider) -> [CFString: Any] {
-        [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: provider.rawValue]
+    private static func baseQuery(_ account: String) -> [CFString: Any] {
+        [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account]
     }
 
     private static func check(_ status: OSStatus) throws {

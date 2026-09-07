@@ -14,7 +14,7 @@ public enum HeadroomApp {
 /// not the usage bars) and a popover for the details.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let monitors = Provider.allCases.map { ProviderMonitor(provider: $0) }
+    private let store = AccountStore()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
     private let updates = UpdateChecker()
@@ -22,10 +22,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// changes width, so the popover does not move with it.
     private let anchor = PassthroughView()
     private var windowObservers: [NSObjectProtocol] = []
+    /// Created on first use; closing hides it (`isReleasedWhenClosed` off) so
+    /// the account rows keep their state between visits.
+    private lazy var settingsWindow: NSWindow = {
+        let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(store: store)))
+        window.title = "headroom Settings"
+        window.styleMask = [.titled, .closable]
+        window.isReleasedWhenClosed = false
+        window.center()
+        return window
+    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.mainMenu = Self.makeMainMenu()
         guard let button = statusItem.button else { return }
-        let label = PassthroughHostingView(rootView: MenuBarLabel(monitors: monitors) { [statusItem] width in
+        let label = PassthroughHostingView(rootView: MenuBarLabel(store: store) { [statusItem] width in
             statusItem.length = width
         })
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -45,7 +56,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.target = self
         button.action = #selector(togglePopover)
 
-        let content = NSHostingController(rootView: PopoverView(monitors: monitors, updates: updates))
+        let content = NSHostingController(rootView: PopoverView(store: store, updates: updates) { [weak self] in
+            self?.openSettings()
+        })
         content.sizingOptions = .preferredContentSize
         popover.contentViewController = content
         popover.behavior = .transient
@@ -60,6 +73,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.activate(ignoringOtherApps: true)
             popover.contentViewController?.view.window?.makeKey()
         }
+    }
+
+    /// The settings live in a window of their own: the popover is transient and
+    /// too narrow for a list of accounts that keeps growing.
+    private func openSettings() {
+        popover.performClose(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow.makeKeyAndOrderFront(nil)
+    }
+
+    /// Accessory apps (LSUIElement) have no menu bar of their own, but macOS
+    /// still resolves Cmd+C/V/X/A in text fields through the app's Edit menu.
+    /// Without one, those shortcuts silently do nothing (right-click paste
+    /// still works since it doesn't go through the menu). Cmd+W closes the
+    /// settings window the same way.
+    private static func makeMainMenu() -> NSMenu {
+        let mainMenu = NSMenu()
+        let fileMenu = NSMenu(title: "File")
+        fileMenu.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll), keyEquivalent: "a")
+        for menu in [fileMenu, editMenu] {
+            let item = NSMenuItem()
+            item.submenu = menu
+            mainMenu.addItem(item)
+        }
+        return mainMenu
     }
 
     /// The popover follows the status item's window when it is resized but not

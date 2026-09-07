@@ -8,9 +8,10 @@ with reset countdowns: the 5-hour session and weekly windows for Claude and
 Codex, the monthly premium-request quota for Copilot. It reads the same numbers
 as the usage pages on claude.ai, chatgpt.com and github.com.
 
-Menu bar: `A ▤ 12%/4%  O ▤ 77%/47%  G ▤ 18%`, one entry per provider, tagged
-by vendor (Anthropic, OpenAI, GitHub): a mini bar per limit and the percentages,
-short-term window first (session/weekly). Bars turn orange at 70 % and red at 90 %.
+Menu bar: `A ▤ 12%/4%  O ▤ 77%/47%  G ▤ 18%`, one entry per signed-in account,
+tagged by vendor unless you rename it (Anthropic, OpenAI, GitHub): a mini bar per
+limit and the percentages, short-term window first (session/weekly). Bars turn
+orange at 70 % and red at 90 %.
 
 ![headroom popover showing Claude, Codex and Copilot usage](docs/images/v1.1.0-screenie.png)
 
@@ -47,8 +48,13 @@ open /Applications/headroom.app
 
 ## Sign in
 
-Each provider is signed in separately. Tokens are stored in your login keychain
-under the service `no.enso.headroom` and refreshed automatically.
+Add an account first — in the [settings](#settings), or from the popover while
+it is empty — then sign in to it. Several accounts of the same provider are
+fine; each gets its own menu bar tag. Tokens for all of them live in a single
+login keychain item (service `no.enso.headroom`, account `accounts`) and are
+refreshed automatically. Upgrading from 1.x moves the old per-provider items
+into it on first launch and then deletes them. Release builds share the 1.x
+signing identity, so that is silent; a locally built app prompts once per item.
 
 **Claude.** Click *Sign in to Claude*. Your browser opens claude.ai; after you
 authorize, Anthropic shows a code and tells you to paste it into Claude Code.
@@ -62,31 +68,47 @@ redirects back to `http://localhost:1455` when done. Nothing to paste.
 github.com/login/device. Enter the code there; headroom picks up the token by
 itself.
 
-Sign out with the door icon next to a provider. Signing out deletes the stored
-tokens.
+**Privately.** The arrow next to a sign-in button runs the same flow in a window
+that shares no cookies with your browser, so a second account of a provider is
+not signed straight back in as the first. Only one account can be signing in at
+a time; *Cancel* in the popover ends it, closing the window does not.
+
+Sign out with the door icon next to an account. Signing out deletes its stored
+tokens, and so does removing the account.
 
 ## Settings
 
-The gear at the bottom of the popover opens the settings.
+The gear at the bottom of the popover opens the settings window; the plus next
+to it adds an account without going there.
 
 ![headroom popover with the settings open](docs/images/v1.1.0-screenie-settings.png)
 
-**Menu bar.** *Bars* and *Percentages* choose how each provider is shown; at
-least one stays on. *Session* and *Weekly* choose which limits are shown, for
-providers that have both. Copilot has a single quota and always shows it.
+**Accounts.** One row per account, in menu bar order; the chevrons move it.
+The photo button picks an image to show instead of the tag. The tag itself is
+up to 3 characters, emoji count as one, and left empty falls back to the
+provider's letter. Then an optional name such as "Office", and a trash button
+that removes the account and forgets its tokens. *Customise menu bar* gives
+that account its own copy of the toggles below; unticking it follows the
+global ones again.
 
-**General.** *Popover opacity* runs from 50 % to fully opaque; the popover
+**Global Default Menu Bar Appearance.** Defaults for accounts without their own. *Bars* and *Percentages*
+choose how each account is shown; at least one stays on. *Session* and *Weekly*
+choose which limits are shown, for providers that have both. Copilot has a
+single quota and always shows it.
+
+**General.** *Popover opacity* runs from 30 % to fully opaque; the popover
 is translucent by default, and this keeps it readable over light windows.
 *Launch at login* registers the app with macOS. *Check for updates* is off by
 default; when on, headroom asks GitHub for the latest release every 6 hours
 and shows a link in the footer when it is newer than the running version.
 Nothing is downloaded or installed automatically.
 
-Settings are stored in the app's user defaults (`no.enso.headroom`).
+Settings are stored in the app's user defaults (`no.enso.headroom`), the
+account list included — tags and names only, never tokens.
 
 ## Refresh behaviour
 
-Each provider has its own schedule.
+Each account has its own schedule.
 
 | Situation | Next check |
 |---|---|
@@ -97,7 +119,7 @@ Each provider has its own schedule.
 | Rate limited (HTTP 429) | 20 min |
 | Manual refresh (↻) | now, then back to 5 min |
 
-The popover footer under each provider shows when it was last updated and when
+The popover footer under each account shows when it was last updated and when
 the next check is due.
 
 ## How it works
@@ -180,22 +202,22 @@ Export) or with `security export -t identities -f pkcs12`, then
 
 ```sh
 make build   # debug build
-make test    # checks: refresh policy, response parsing, PKCE (no Xcode needed)
+make test    # checks: refresh policy, response parsing, PKCE, accounts (no Xcode needed)
 make app     # release build + app bundle in build/
 make release # DMG, signed and notarized when SIGN_IDENTITY/NOTARY_PROFILE are set
 make artwork # regenerate Resources/headroom.icns and the DMG background
-swift run HeadroomChecks --live   # also fetch and print usage for signed-in providers
+swift run HeadroomChecks --live   # also fetch and print usage for signed-in accounts
 ```
 
 Layout:
 
 ```
 Sources/HeadroomCore/
-  Model/       Provider, UsageWindow/UsageSnapshot, OAuthTokens, errors
-  Auth/        PKCE, JWT claims, keychain store, localhost callback server
+  Model/       Provider, Account, MenuBarOptions, UsageWindow/UsageSnapshot, OAuthTokens, errors
+  Auth/        PKCE, JWT claims, keychain vault + migration, localhost callback server, private sign-in window
   Providers/   ClaudeService, CodexService, CopilotService, shared HTTP helpers
-  Scheduler/   RefreshPolicy (pure), ProviderMonitor (state + polling loop)
-  UI/          status item + popover (App), menu bar label, per-provider section, formatting
+  Scheduler/   RefreshPolicy (pure), AccountStore (accounts + vault), AccountMonitor (state + polling loop)
+  UI/          status item + popover (App), menu bar label, per-account section, settings, formatting
 Sources/headroom/        main.swift, launches the app
 Sources/HeadroomChecks/  check runner used by `make test`
 ```
