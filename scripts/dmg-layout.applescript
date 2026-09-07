@@ -14,7 +14,7 @@ on run argv
             set icon size of options to 128
             set text size of options to 13
             set background picture of options to file ".background:background.tiff"
-            set position of item "headroom.app" of container window to {165, 175}
+            set position of item "Range Anxiety.app" of container window to {165, 175}
             set position of item "Applications" of container window to {495, 175}
             close
             open

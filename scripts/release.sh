@@ -13,17 +13,17 @@ fi
 export SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 scripts/bundle.sh
 
-VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' build/headroom.app/Contents/Info.plist)
-DMG="build/headroom-$VERSION.dmg"
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "build/Range Anxiety.app/Contents/Info.plist")
+DMG="build/range-anxiety-$VERSION.dmg"
 STAGING=build/dmg
-RW=build/headroom-rw.dmg
+RW=build/range-anxiety-rw.dmg
 rm -rf "$STAGING" "$DMG" "$RW"
 mkdir -p "$STAGING/.background"
-cp -R build/headroom.app "$STAGING/"
+cp -R "build/Range Anxiety.app" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 cp Resources/dmg-background.tiff "$STAGING/.background/background.tiff"
-cp Resources/headroom.icns "$STAGING/.VolumeIcon.icns"
-hdiutil create -quiet -volname headroom -srcfolder "$STAGING" -format UDRW -ov "$RW"
+cp Resources/range-anxiety.icns "$STAGING/.VolumeIcon.icns"
+hdiutil create -quiet -volname "Range Anxiety" -srcfolder "$STAGING" -format UDRW -ov "$RW"
 rm -rf "$STAGING"
 
 # Mount it and let Finder lay out the window (background, icon positions) into its .DS_Store.

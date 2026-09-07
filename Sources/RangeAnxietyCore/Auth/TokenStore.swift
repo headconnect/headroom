@@ -4,7 +4,10 @@ import Security
 /// Every account's tokens in a single login keychain item, so adding an
 /// account never adds another keychain prompt.
 enum TokenStore {
-    private static let service = "no.enso.headroom"
+    private static let service = "no.enso.range-anxiety"
+    /// The app was called headroom before 2.1; its items are only read by the
+    /// migration, then deleted.
+    static let previousService = "no.enso.headroom"
     private static let vaultAccount = "accounts"
 
     /// The stored JSON. `version` is there so a later format change can tell
@@ -38,20 +41,31 @@ enum TokenStore {
         try write(try JSONEncoder().encode(Vault(tokens)), to: vaultAccount)
     }
 
-    /// Pre-vault items, one per provider; only the migration reads these.
+    /// The vault written under the previous name; nil when there is none.
+    static func loadPrevious() throws -> [UUID: OAuthTokens]? {
+        guard let data = try read(vaultAccount, service: previousService) else { return nil }
+        return (try? JSONDecoder().decode(Vault.self, from: data))?.byAccount ?? [:]
+    }
+
+    static func deletePrevious() {
+        SecItemDelete(baseQuery(vaultAccount, service: previousService) as CFDictionary)
+    }
+
+    /// Pre-vault items, one per provider, under the previous name (1.x never
+    /// ran under this one); only the migration reads these.
     static func loadLegacy(_ provider: Provider) throws -> OAuthTokens? {
-        guard let data = try read(provider.rawValue) else { return nil }
+        guard let data = try read(provider.rawValue, service: previousService) else { return nil }
         return try? JSONDecoder().decode(OAuthTokens.self, from: data)
     }
 
     static func deleteLegacy(_ provider: Provider) {
-        SecItemDelete(baseQuery(provider.rawValue) as CFDictionary)
+        SecItemDelete(baseQuery(provider.rawValue, service: previousService) as CFDictionary)
     }
 
     /// nil means the item is absent; any other failure throws, so callers can
     /// tell "nothing stored" from "could not look".
-    private static func read(_ account: String) throws -> Data? {
-        var query = baseQuery(account)
+    private static func read(_ account: String, service: String = service) throws -> Data? {
+        var query = baseQuery(account, service: service)
         query[kSecReturnData] = true
         query[kSecMatchLimit] = kSecMatchLimitOne
         var item: CFTypeRef?
@@ -73,7 +87,7 @@ enum TokenStore {
         }
     }
 
-    private static func baseQuery(_ account: String) -> [CFString: Any] {
+    private static func baseQuery(_ account: String, service: String = service) -> [CFString: Any] {
         [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account]
     }
 

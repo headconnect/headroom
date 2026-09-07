@@ -4,13 +4,13 @@ build:
 	swift build
 
 test:
-	swift run HeadroomChecks
+	swift run RangeAnxietyChecks
 
 app:
 	scripts/bundle.sh
 
 run: app
-	open build/headroom.app
+	open "build/Range Anxiety.app"
 
 release:
 	scripts/release.sh
@@ -19,8 +19,8 @@ artwork:
 	scripts/artwork.sh
 
 install: app
-	rm -rf /Applications/headroom.app
-	cp -R build/headroom.app /Applications/
+	rm -rf "/Applications/Range Anxiety.app"
+	cp -R "build/Range Anxiety.app" /Applications/
 
 clean:
 	rm -rf .build build

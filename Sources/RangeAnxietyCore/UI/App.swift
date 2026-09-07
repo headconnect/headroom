@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-public enum HeadroomApp {
+public enum RangeAnxietyApp {
     @MainActor public static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// the account rows keep their state between visits.
     private lazy var settingsWindow: NSWindow = {
         let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(store: store)))
-        window.title = "headroom Settings"
+        window.title = "Range Anxiety Settings"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.center()

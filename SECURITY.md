@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-Use [GitHub's private vulnerability reporting](https://github.com/headconnect/headroom/security/advisories/new) to report a vulnerability. Please do not open a public issue for it.
+Use [GitHub's private vulnerability reporting](https://github.com/headconnect/range-anxiety/security/advisories/new) to report a vulnerability. Please do not open a public issue for it.
 
 ## Scope
 

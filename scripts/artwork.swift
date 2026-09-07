@@ -100,7 +100,7 @@ func drawBackground(_ ctx: CGContext) {
     ctx.addLine(to: CGPoint(x: 380, y: y - 16))
     ctx.strokePath()
 
-    drawText(ctx, "Drag headroom into the Applications folder to install it.", size: 15, weight: .medium, color: 0x3A3A3C,
+    drawText(ctx, "Drag Range Anxiety into the Applications folder to install it.", size: 15, weight: .medium, color: 0x3A3A3C,
              centerX: dmgWidth / 2, y: 86)
     drawText(ctx, "Then open it from Applications or Spotlight; it lives in the menu bar.", size: 12, weight: .regular,
              color: 0x8A8A8E, centerX: dmgWidth / 2, y: 62)

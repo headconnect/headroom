@@ -31,7 +31,7 @@ final class AccountStore {
             if !accounts.isEmpty {
                 do { vault = try TokenStore.load() } catch { vaultLoaded = false }
             }
-        } else if let migrated = LegacyMigration.run() {
+        } else if let migrated = LegacyMigration.run(into: defaults) {
             accounts = migrated.accounts
             vault = migrated.vault
             migrating = true

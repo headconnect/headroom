@@ -1,6 +1,6 @@
-# headroom
+# Range Anxiety
 
-[![Release](https://img.shields.io/github/v/release/headconnect/headroom)](https://github.com/headconnect/headroom/releases/latest)
+[![Release](https://img.shields.io/github/v/release/headconnect/range-anxiety)](https://github.com/headconnect/range-anxiety/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 macOS menu bar app showing your Claude, Codex and GitHub Copilot plan usage
@@ -13,7 +13,7 @@ tagged by vendor unless you rename it (Anthropic, OpenAI, GitHub): a mini bar pe
 limit and the percentages, short-term window first (session/weekly). Bars turn
 orange at 70 % and red at 90 %.
 
-![headroom popover showing Claude, Codex and Copilot usage](docs/images/v1.1.0-screenie.png)
+![Range Anxiety popover showing Claude, Codex and Copilot usage](docs/images/v1.1.0-screenie.png)
 
 ## Requirements
 
@@ -22,15 +22,15 @@ orange at 70 % and red at 90 %.
 
 ## Install
 
-Download the latest DMG from [Releases](https://github.com/headconnect/headroom/releases/latest),
-open it, and drag headroom into the Applications folder shown next to it. It's
+Download the latest DMG from [Releases](https://github.com/headconnect/range-anxiety/releases/latest),
+open it, and drag Range Anxiety into the Applications folder shown next to it. It's
 signed and notarized, so Gatekeeper lets it run without extra steps. Then open
 it from Applications or Spotlight; it appears in the menu bar, not the Dock.
 
 Or with [Homebrew](https://brew.sh):
 
 ```sh
-brew install headconnect/tap/headroom
+brew install headconnect/tap/range-anxiety
 ```
 
 Tick "Launch at login" in the [settings](#settings) to keep it running.
@@ -40,8 +40,8 @@ Tick "Launch at login" in the [settings](#settings) to keep it running.
 Needs a Swift 5.10+ toolchain (Xcode Command Line Tools are enough):
 
 ```sh
-make install   # builds build/headroom.app and copies it to /Applications
-open /Applications/headroom.app
+make install   # builds "build/Range Anxiety.app" and copies it to /Applications
+open "/Applications/Range Anxiety.app"
 ```
 
 `make run` builds and launches without installing.
@@ -51,21 +51,22 @@ open /Applications/headroom.app
 Add an account first — in the [settings](#settings), or from the popover while
 it is empty — then sign in to it. Several accounts of the same provider are
 fine; each gets its own menu bar tag. Tokens for all of them live in a single
-login keychain item (service `no.enso.headroom`, account `accounts`) and are
-refreshed automatically. Upgrading from 1.x moves the old per-provider items
-into it on first launch and then deletes them. Release builds share the 1.x
+login keychain item (service `no.enso.range-anxiety`, account `accounts`) and are
+refreshed automatically. The app was called headroom up to 2.0; the first
+launch under this name moves its vault, settings and account list over (or the
+1.x per-provider items) and then deletes them. Release builds share the old
 signing identity, so that is silent; a locally built app prompts once per item.
 
 **Claude.** Click *Sign in to Claude*. Your browser opens claude.ai; after you
 authorize, Anthropic shows a code and tells you to paste it into Claude Code.
-Paste it into headroom instead and press *Continue*.
+Paste it into Range Anxiety instead and press *Continue*.
 
 **Codex.** Click *Sign in to Codex*. Your browser opens auth.openai.com and
 redirects back to `http://localhost:1455` when done. Nothing to paste.
 
-**Copilot.** Click *Sign in to Copilot*. headroom shows an 8-character code
+**Copilot.** Click *Sign in to Copilot*. Range Anxiety shows an 8-character code
 (with a copy button; it is also put on your clipboard) and opens
-github.com/login/device. Enter the code there; headroom picks up the token by
+github.com/login/device. Enter the code there; Range Anxiety picks up the token by
 itself.
 
 **Privately.** The arrow next to a sign-in button runs the same flow in a window
@@ -81,7 +82,7 @@ tokens, and so does removing the account.
 The gear at the bottom of the popover opens the settings window; the plus next
 to it adds an account without going there.
 
-![headroom popover with the settings open](docs/images/v1.1.0-screenie-settings.png)
+![Range Anxiety popover with the settings open](docs/images/v1.1.0-screenie-settings.png)
 
 **Accounts.** One row per account, in menu bar order; the chevrons move it.
 The photo button picks an image to show instead of the tag. The tag itself is
@@ -99,11 +100,11 @@ single quota and always shows it.
 **General.** *Popover opacity* runs from 30 % to fully opaque; the popover
 is translucent by default, and this keeps it readable over light windows.
 *Launch at login* registers the app with macOS. *Check for updates* is off by
-default; when on, headroom asks GitHub for the latest release every 6 hours
+default; when on, Range Anxiety asks GitHub for the latest release every 6 hours
 and shows a link in the footer when it is newer than the running version.
 Nothing is downloaded or installed automatically.
 
-Settings are stored in the app's user defaults (`no.enso.headroom`), the
+Settings are stored in the app's user defaults (`no.enso.range-anxiety`), the
 account list included — tags and names only, never tokens.
 
 ## Refresh behaviour
@@ -146,7 +147,7 @@ link in the popover when it is newer than the running version.
 
 ## Release
 
-`make release` builds `build/headroom-<version>.dmg`: the app and an
+`make release` builds `build/range-anxiety-<version>.dmg`: the app and an
 Applications shortcut over `Resources/dmg-background.tiff`, laid out by Finder
 via `scripts/dmg-layout.applescript`. The icon and background are drawn by
 `scripts/artwork.swift`; `make artwork` regenerates them. To make it installable
@@ -156,7 +157,7 @@ set `SIGN_IDENTITY` to choose explicitly. Notarization runs when
 `NOTARY_PROFILE` is set:
 
 ```sh
-NOTARY_PROFILE=headroom make release
+NOTARY_PROFILE=range-anxiety make release
 ```
 
 One-time setup with an Apple Developer account:
@@ -168,7 +169,7 @@ One-time setup with an Apple Developer account:
    double-click it. `security find-identity -v -p codesigning` then lists it.
 2. Create an app-specific password at account.apple.com and store it:
    ```sh
-   xcrun notarytool store-credentials headroom \
+   xcrun notarytool store-credentials range-anxiety \
        --apple-id you@example.com --team-id TEAMID
    ```
 
@@ -179,7 +180,7 @@ Mac. Signing with a Developer ID also stops the keychain prompt after rebuilds.
 
 `.github/workflows/release.yml` does the same on a macOS runner, on every
 `v*` tag (attaching the DMG to a GitHub Release) or by hand from the Actions
-tab (DMG as a build artifact). A tag `v1.2` produces `headroom-1.2.dmg`
+tab (DMG as a build artifact). A tag `v1.2` produces `range-anxiety-1.2.dmg`
 with that version stamped into the app; manual runs use the version in
 `Resources/Info.plist`. After a tagged release it also bumps the cask in
 [headconnect/homebrew-tap](https://github.com/headconnect/homebrew-tap) via
@@ -205,21 +206,21 @@ make build   # debug build
 make test    # checks: refresh policy, response parsing, PKCE, accounts (no Xcode needed)
 make app     # release build + app bundle in build/
 make release # DMG, signed and notarized when SIGN_IDENTITY/NOTARY_PROFILE are set
-make artwork # regenerate Resources/headroom.icns and the DMG background
-swift run HeadroomChecks --live   # also fetch and print usage for signed-in accounts
+make artwork # regenerate Resources/range-anxiety.icns and the DMG background
+swift run RangeAnxietyChecks --live   # also fetch and print usage for signed-in accounts
 ```
 
 Layout:
 
 ```
-Sources/HeadroomCore/
+Sources/RangeAnxietyCore/
   Model/       Provider, Account, MenuBarOptions, UsageWindow/UsageSnapshot, OAuthTokens, errors
   Auth/        PKCE, JWT claims, keychain vault + migration, localhost callback server, private sign-in window
   Providers/   ClaudeService, CodexService, CopilotService, shared HTTP helpers
   Scheduler/   RefreshPolicy (pure), AccountStore (accounts + vault), AccountMonitor (state + polling loop)
   UI/          status item + popover (App), menu bar label, per-account section, settings, formatting
-Sources/headroom/        main.swift, launches the app
-Sources/HeadroomChecks/  check runner used by `make test`
+Sources/range-anxiety/        main.swift, launches the app
+Sources/RangeAnxietyChecks/  check runner used by `make test`
 ```
 
 Development builds are ad-hoc signed, so each build has a new signature and
