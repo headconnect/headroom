@@ -4,10 +4,13 @@ import Security
 /// Every account's tokens in a single login keychain item, so adding an
 /// account never adds another keychain prompt.
 enum TokenStore {
-    private static let service = "no.enso.range-anxiety"
-    /// The app was called headroom before 2.1; its items are only read by the
-    /// migration, then deleted.
-    static let previousService = "no.enso.headroom"
+    private static let service = "no.enso.rations"
+    /// Names the app ran under before, newest first: Range Anxiety (2.1) and
+    /// headroom (up to 2.0). Their items are only read by the migration, then
+    /// deleted.
+    static let previousServices = ["no.enso.range-anxiety", "no.enso.headroom"]
+    /// 1.x only ever ran as headroom.
+    static let legacyService = "no.enso.headroom"
     private static let vaultAccount = "accounts"
 
     /// The stored JSON. `version` is there so a later format change can tell
@@ -41,25 +44,25 @@ enum TokenStore {
         try write(try JSONEncoder().encode(Vault(tokens)), to: vaultAccount)
     }
 
-    /// The vault written under the previous name; nil when there is none.
-    static func loadPrevious() throws -> [UUID: OAuthTokens]? {
-        guard let data = try read(vaultAccount, service: previousService) else { return nil }
+    /// The vault written under a previous name; nil when there is none.
+    static func loadPrevious(service: String) throws -> [UUID: OAuthTokens]? {
+        guard let data = try read(vaultAccount, service: service) else { return nil }
         return (try? JSONDecoder().decode(Vault.self, from: data))?.byAccount ?? [:]
     }
 
-    static func deletePrevious() {
-        SecItemDelete(baseQuery(vaultAccount, service: previousService) as CFDictionary)
+    static func deletePrevious(service: String) {
+        SecItemDelete(baseQuery(vaultAccount, service: service) as CFDictionary)
     }
 
-    /// Pre-vault items, one per provider, under the previous name (1.x never
-    /// ran under this one); only the migration reads these.
+    /// Pre-vault items, one per provider, under the 1.x name; only the
+    /// migration reads these.
     static func loadLegacy(_ provider: Provider) throws -> OAuthTokens? {
-        guard let data = try read(provider.rawValue, service: previousService) else { return nil }
+        guard let data = try read(provider.rawValue, service: legacyService) else { return nil }
         return try? JSONDecoder().decode(OAuthTokens.self, from: data)
     }
 
     static func deleteLegacy(_ provider: Provider) {
-        SecItemDelete(baseQuery(provider.rawValue, service: previousService) as CFDictionary)
+        SecItemDelete(baseQuery(provider.rawValue, service: legacyService) as CFDictionary)
     }
 
     /// nil means the item is absent; any other failure throws, so callers can

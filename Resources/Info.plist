@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Range Anxiety</string>
+    <string>Rations</string>
     <key>CFBundleDisplayName</key>
-    <string>Range Anxiety</string>
+    <string>Rations</string>
     <key>CFBundleIdentifier</key>
-    <string>no.enso.range-anxiety</string>
+    <string>no.enso.rations</string>
     <key>CFBundleIconFile</key>
-    <string>range-anxiety</string>
+    <string>rations</string>
     <key>CFBundleExecutable</key>
-    <string>range-anxiety</string>
+    <string>rations</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

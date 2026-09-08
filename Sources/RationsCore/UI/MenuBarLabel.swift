@@ -12,7 +12,7 @@ struct MenuBarLabel: View {
         let active = store.monitors.filter(\.isSignedIn)
         HStack(spacing: 10) {
             if active.isEmpty {
-                Text("Range Anxiety")
+                Text("Rations")
             } else {
                 ForEach(active) { AccountGauge(monitor: $0) }
             }

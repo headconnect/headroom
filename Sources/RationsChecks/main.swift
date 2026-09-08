@@ -1,8 +1,8 @@
-// Minimal check runner: `swift run RangeAnxietyChecks`. Exits non-zero on failure.
+// Minimal check runner: `swift run RationsChecks`. Exits non-zero on failure.
 // `--live` additionally fetches usage for every signed-in account and prints it.
 import AppKit
 import Foundation
-@testable import RangeAnxietyCore
+@testable import RationsCore
 
 var failures = 0
 
@@ -226,7 +226,7 @@ check("menu bar options keep one of each pair") {
 }
 
 check("global menu bar options default to on") {
-    let suite = "no.enso.range-anxiety.checks"
+    let suite = "no.enso.rations.checks"
     let defaults = UserDefaults(suiteName: suite)!
     defaults.removePersistentDomain(forName: suite)
     let fresh = MenuBarOptions.global(defaults)
@@ -241,7 +241,7 @@ check("global menu bar options default to on") {
 if CommandLine.arguments.contains("--live") {
     // Read-only on purpose: an AccountStore here would start polling loops that
     // refresh tokens and rewrite the vault behind the running app's back.
-    let defaults = UserDefaults(suiteName: "no.enso.range-anxiety") ?? .standard
+    let defaults = UserDefaults(suiteName: "no.enso.rations") ?? .standard
     let stored = defaults.data(forKey: Settings.accounts) ?? Data()
     let accounts = (try? JSONDecoder().decode([Account].self, from: stored)) ?? []
     let vault = accounts.isEmpty ? [:] : ((try? TokenStore.load()) ?? [:])

@@ -36,7 +36,7 @@ final class PrivateSignInSession: NSObject, ASWebAuthenticationPresentationConte
         anchor.orderFrontRegardless()
         // Closing the window is left to the popover's Cancel button, exactly as
         // closing a browser tab is today.
-        let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "range-anxiety-private") { _, _ in }
+        let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "rations-private") { _, _ in }
         session.prefersEphemeralWebBrowserSession = true
         session.presentationContextProvider = self
         self.session = session

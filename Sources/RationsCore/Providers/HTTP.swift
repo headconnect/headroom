@@ -1,7 +1,7 @@
 import Foundation
 
 enum HTTP {
-    static let userAgent = "range-anxiety/1.0 (macOS)"
+    static let userAgent = "rations/\(UpdateChecker.currentVersion) (macOS)"
 
     static func get(_ url: URL, headers: [String: String]) async throws -> Data {
         var request = URLRequest(url: url)

@@ -4,13 +4,13 @@ build:
 	swift build
 
 test:
-	swift run RangeAnxietyChecks
+	swift run RationsChecks
 
 app:
 	scripts/bundle.sh
 
 run: app
-	open "build/Range Anxiety.app"
+	open "build/Rations.app"
 
 release:
 	scripts/release.sh
@@ -19,8 +19,8 @@ artwork:
 	scripts/artwork.sh
 
 install: app
-	rm -rf "/Applications/Range Anxiety.app"
-	cp -R "build/Range Anxiety.app" /Applications/
+	rm -rf "/Applications/Rations.app"
+	cp -R "build/Rations.app" /Applications/
 
 clean:
 	rm -rf .build build

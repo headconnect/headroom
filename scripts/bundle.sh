@@ -1,18 +1,21 @@
 #!/bin/sh
-# Builds a release binary and wraps it in "build/Range Anxiety.app".
+# Builds a release binary and wraps it in "build/Rations.app".
 # SIGN_IDENTITY selects the codesign identity; default "-" is ad-hoc.
-# VERSION overrides CFBundleShortVersionString/CFBundleVersion from Resources/Info.plist.
+# VERSION sets CFBundleShortVersionString/CFBundleVersion; it defaults to `git describe`
+# (the tag, e.g. 2.1.0, or 2.1.0-3-gabc1234 past it) and, outside a git checkout, to
+# what Resources/Info.plist says.
 set -eu
 cd "$(dirname "$0")/.."
 
-swift build -c release --product range-anxiety
-APP="build/Range Anxiety.app"
+swift build -c release --product rations
+APP="build/Rations.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/range-anxiety "$APP/Contents/MacOS/"
+cp .build/release/rations "$APP/Contents/MacOS/"
 cp Resources/Info.plist "$APP/Contents/"
-cp Resources/range-anxiety.icns "$APP/Contents/Resources/"
-if [ -n "${VERSION:-}" ]; then
+cp Resources/rations.icns "$APP/Contents/Resources/"
+VERSION="${VERSION:-$(git describe --tags --always 2>/dev/null | sed 's/^v//')}"
+if [ -n "$VERSION" ]; then
     /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" -c "Set CFBundleVersion $VERSION" "$APP/Contents/Info.plist"
 fi
 

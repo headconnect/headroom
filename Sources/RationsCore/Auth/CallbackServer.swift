@@ -6,7 +6,7 @@ final class CallbackServer: @unchecked Sendable {
     let port: UInt16
     private let path: String
     private let listener: NWListener
-    private let queue = DispatchQueue(label: "no.enso.range-anxiety.callback")
+    private let queue = DispatchQueue(label: "no.enso.rations.callback")
     private let lock = NSLock()
     private var continuation: CheckedContinuation<[String: String], Error>?
     private var started = false
@@ -97,6 +97,6 @@ final class CallbackServer: @unchecked Sendable {
 
     private static let successPage = """
         <html><body style="font-family:-apple-system,sans-serif;text-align:center;padding-top:5em">
-        <h2>Signed in</h2><p>You can close this tab and return to Range Anxiety.</p></body></html>
+        <h2>Signed in</h2><p>You can close this tab and return to Rations.</p></body></html>
         """
 }

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds a signed app, packs it into a DMG, and notarizes it.
-#   VERSION         app version, e.g. 1.2; defaults to the one in Resources/Info.plist
+#   VERSION         app version, e.g. 1.2; defaults to `git describe --tags` (see bundle.sh)
 #   SIGN_IDENTITY   "Developer ID Application: Name (TEAMID)"; defaults to the one in your keychain, else ad-hoc
 #   NOTARY_PROFILE  notarytool keychain profile name, or
 #   NOTARY_APPLE_ID + NOTARY_PASSWORD + NOTARY_TEAM_ID for CI; notarization is skipped if neither is set
@@ -13,17 +13,17 @@ fi
 export SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 scripts/bundle.sh
 
-VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "build/Range Anxiety.app/Contents/Info.plist")
-DMG="build/range-anxiety-$VERSION.dmg"
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "build/Rations.app/Contents/Info.plist")
+DMG="build/rations-$VERSION.dmg"
 STAGING=build/dmg
-RW=build/range-anxiety-rw.dmg
+RW=build/rations-rw.dmg
 rm -rf "$STAGING" "$DMG" "$RW"
 mkdir -p "$STAGING/.background"
-cp -R "build/Range Anxiety.app" "$STAGING/"
+cp -R "build/Rations.app" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 cp Resources/dmg-background.tiff "$STAGING/.background/background.tiff"
-cp Resources/range-anxiety.icns "$STAGING/.VolumeIcon.icns"
-hdiutil create -quiet -volname "Range Anxiety" -srcfolder "$STAGING" -format UDRW -ov "$RW"
+cp Resources/rations.icns "$STAGING/.VolumeIcon.icns"
+hdiutil create -quiet -volname "Rations" -srcfolder "$STAGING" -format UDRW -ov "$RW"
 rm -rf "$STAGING"
 
 # Mount it and let Finder lay out the window (background, icon positions) into its .DS_Store.

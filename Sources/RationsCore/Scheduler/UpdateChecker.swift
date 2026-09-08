@@ -15,7 +15,7 @@ final class UpdateChecker {
     private var loop: Task<Void, Never>?
     private var observer: NSObjectProtocol?
 
-    static let latestURL = URL(string: "https://api.github.com/repos/headconnect/range-anxiety/releases/latest")!
+    static let latestURL = URL(string: "https://api.github.com/repos/headconnect/rations/releases/latest")!
     static let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
 
     init() {

@@ -1,8 +1,9 @@
 import Foundation
 
 /// One-time moves into the current stores, run when the accounts key is
-/// absent from the defaults: the vault and settings written under the app's
-/// previous name (headroom, up to 2.0), or the 1.x keychain item per provider.
+/// absent from the defaults: the vault and settings written under one of the
+/// app's previous names (Range Anxiety in 2.1, headroom up to 2.0), or the
+/// 1.x keychain item per provider.
 enum LegacyMigration {
     typealias Legacy = (provider: Provider, tokens: OAuthTokens)
     typealias Migrated = (accounts: [Account], vault: [UUID: OAuthTokens])
@@ -23,24 +24,28 @@ enum LegacyMigration {
     /// nil means a read or the vault write failed, so the caller must not
     /// record the migration as done and lose the untouched old items.
     static func run(into defaults: UserDefaults) -> Migrated? {
-        let previous = UserDefaults.standard.persistentDomain(forName: TokenStore.previousService) ?? [:]
+        // The newest previous name that has an account list wins; each rename
+        // deleted the one before it, so normally only one exists.
+        let domains = TokenStore.previousServices.map { ($0, UserDefaults.standard.persistentDomain(forName: $0) ?? [:]) }
+        let (service, previous) = domains.first { $0.1[Settings.accounts] != nil }
+            ?? (TokenStore.legacyService, UserDefaults.standard.persistentDomain(forName: TokenStore.legacyService) ?? [:])
         // Settings are copied first; doing it again on a retry is harmless.
         // The accounts key is what marks the migration done, so it is not.
         for (key, value) in previous where key != Settings.accounts { defaults.set(value, forKey: key) }
         guard let data = previous[Settings.accounts] as? Data else { return runLegacy() }
-        return runPrevious(accounts: (try? JSONDecoder().decode([Account].self, from: data)) ?? [])
+        return runPrevious(service: service, accounts: (try? JSONDecoder().decode([Account].self, from: data)) ?? [])
     }
 
-    /// Moves the 2.0 vault to this name and deletes the old item and defaults
+    /// Moves a 2.x vault to this name and deletes the old item and defaults
     /// only once the new vault holds the tokens.
-    private static func runPrevious(accounts: [Account]) -> Migrated? {
+    private static func runPrevious(service: String, accounts: [Account]) -> Migrated? {
         let vault: [UUID: OAuthTokens]
-        do { vault = try TokenStore.loadPrevious() ?? [:] } catch { return nil }
+        do { vault = try TokenStore.loadPrevious(service: service) ?? [:] } catch { return nil }
         if !vault.isEmpty {
             do { try TokenStore.save(vault) } catch { return nil }
         }
-        TokenStore.deletePrevious()
-        UserDefaults.standard.removePersistentDomain(forName: TokenStore.previousService)
+        TokenStore.deletePrevious(service: service)
+        UserDefaults.standard.removePersistentDomain(forName: service)
         return (accounts, vault)
     }
 
