@@ -9,6 +9,9 @@ enum Settings {
     static let popoverOpacity = "popover.opacity"    // Double, 0.75
     static let checkForUpdates = "updates.check"     // Bool, false
     static let accounts = "accounts"                 // Data, JSON [Account] in display order
+    /// Bool, false. Not in the UI: launch with `-redactAccountLabels YES` to
+    /// show placeholders instead of the signed-in identities, for screenshots.
+    static let redactAccountLabels = "redactAccountLabels"
 
     static let defaultPopoverOpacity = 0.75
     static let minPopoverOpacity = 0.3

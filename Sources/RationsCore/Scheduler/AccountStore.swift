@@ -12,6 +12,8 @@ final class AccountStore {
     /// False when the keychain read failed; writing then would replace the
     /// other accounts' tokens with an empty vault.
     private var vaultLoaded = true
+    /// Why, so the accounts can say so instead of just offering "Sign in".
+    private(set) var vaultError: String?
     private let defaults: UserDefaults
 
     var accounts: [Account] { monitors.map(\.account) }
@@ -29,7 +31,10 @@ final class AccountStore {
             accounts = (try? JSONDecoder().decode([Account].self, from: data)) ?? []
             // Skip the keychain entirely when nothing is signed in.
             if !accounts.isEmpty {
-                do { vault = try TokenStore.load() } catch { vaultLoaded = false }
+                do { vault = try TokenStore.load() } catch {
+                    vaultLoaded = false
+                    vaultError = error.localizedDescription
+                }
             }
         } else if let migrated = LegacyMigration.run(into: defaults) {
             accounts = migrated.accounts
@@ -94,6 +99,7 @@ final class AccountStore {
         if !vaultLoaded {
             vault = try TokenStore.load()
             vaultLoaded = true
+            vaultError = nil
         }
         vault[id] = tokens
         try TokenStore.save(vault)

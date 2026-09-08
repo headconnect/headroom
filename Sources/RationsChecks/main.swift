@@ -165,6 +165,20 @@ check("countdown formatting") {
         && Format.countdown(to: now, from: now) == "now"
 }
 
+check("age formatting") {
+    let now = Date(timeIntervalSince1970: 1_000_000)
+    return Format.age(now.addingTimeInterval(-20), now: now) == "just now"
+        && Format.age(now.addingTimeInterval(-3 * 60), now: now) == "3m ago"
+        && Format.age(now.addingTimeInterval(-90 * 60), now: now) == "1h ago"
+        && Format.age(now.addingTimeInterval(-3 * 86_400 - 60), now: now) == "3d ago"
+}
+
+check("redacted account labels keep the plan") {
+    Format.redacted("someone@example.com (Max)", provider: .claude) == "user@domain (Max)"
+        && Format.redacted("someone@example.com", provider: .codex) == "user@domain"
+        && Format.redacted("octocat (Business)", provider: .copilot) == "ghuser (Business)"
+}
+
 // MARK: Accounts
 
 check("vault json is keyed by account id and round trips") {

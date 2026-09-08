@@ -15,14 +15,23 @@ enum Format {
         }
     }
 
-    /// "just now", "3m ago", "2h ago".
+    /// "just now", "3m ago", "2h ago", "3d ago".
     static func age(_ date: Date, now: Date) -> String {
         let minutes = Int(now.timeIntervalSince(date)) / 60
         switch minutes {
         case ..<1: return "just now"
         case ..<60: return "\(minutes)m ago"
-        default: return "\(minutes / 60)h ago"
+        case ..<(24 * 60): return "\(minutes / 60)h ago"
+        default: return "\(minutes / (24 * 60))d ago"
         }
+    }
+
+    /// The account label with the identity swapped for a placeholder, plan
+    /// kept: "user@domain (Max)", "ghuser (Business)".
+    static func redacted(_ label: String, provider: Provider) -> String {
+        let placeholder = provider == .copilot ? "ghuser" : "user@domain"
+        let rest = label.split(separator: " ", maxSplits: 1).dropFirst().joined()
+        return rest.isEmpty ? placeholder : "\(placeholder) \(rest)"
     }
 
     static func percent(_ value: Double) -> String { "\(Int(value.rounded()))%" }

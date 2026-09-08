@@ -45,6 +45,10 @@ final class AccountMonitor: Identifiable {
         if tokens != nil {
             status = .idle
             startLoop()
+        } else if let error = store.vaultError {
+            // The tokens may well be there; say why they could not be read
+            // rather than silently offering a fresh sign-in.
+            status = .error("\(error) Restart the app to try again.")
         }
     }
 

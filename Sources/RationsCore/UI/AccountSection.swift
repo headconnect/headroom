@@ -24,8 +24,7 @@ struct AccountSection: View {
         HStack(alignment: .firstTextBaseline) {
             AccountLabel(account: monitor.account).font(.headline)
             Text(monitor.provider.name).font(.headline)
-            let subtitle = [monitor.account.name, monitor.tokens?.account ?? ""]
-                .filter { !$0.isEmpty }.joined(separator: " · ")
+            let subtitle = [monitor.account.name, identity].filter { !$0.isEmpty }.joined(separator: " · ")
             if !subtitle.isEmpty {
                 Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
@@ -80,6 +79,14 @@ struct AccountSection: View {
         } else {
             SignInButton(monitor: monitor, store: store)
         }
+    }
+
+    /// Who is signed in, as reported by the provider; a placeholder under the
+    /// screenshot flag (see `Settings.redactAccountLabels`).
+    private var identity: String {
+        guard let label = monitor.tokens?.account else { return "" }
+        guard UserDefaults.standard.bool(forKey: Settings.redactAccountLabels) else { return label }
+        return Format.redacted(label, provider: monitor.provider)
     }
 
     private func schedule(_ snapshot: UsageSnapshot) -> String {
