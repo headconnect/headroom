@@ -13,7 +13,7 @@ tagged by vendor unless you rename it (Anthropic, OpenAI, GitHub): a mini bar pe
 limit and the percentages, short-term window first (session/weekly). Bars turn
 orange at 70 % and red at 90 %.
 
-![Rations popover showing Claude, Codex and Copilot usage](docs/images/v1.1.0-screenie.png)
+![Menu bar with three accounts, the popover showing Claude, Codex and Copilot usage with the Codex session bar orange past 70 %, a fourth account waiting to sign in, and the settings window alongside](docs/images/rations-screenshot-2.1.1.png)
 
 ## Requirements
 
@@ -82,8 +82,6 @@ tokens, and so does removing the account.
 
 The gear at the bottom of the popover opens the settings window; the plus next
 to it adds an account without going there.
-
-![Rations popover with the settings open](docs/images/v1.1.0-screenie-settings.png)
 
 **Accounts.** One row per account, in menu bar order; the chevrons move it.
 The photo button picks an image to show instead of the tag. The tag itself is
