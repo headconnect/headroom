@@ -113,6 +113,17 @@ check("named Fable limit wins over legacy data and ignores malformed entries") {
         && UsageSnapshot(windows: windows, fetchedAt: .now).headline.isEmpty
 }
 
+check("explicitly inactive Fable limits are hidden") {
+    let json = #"{"limits": [{"kind": "weekly_scoped", "percent": 94, "scope": {"model": {"display_name": "Fable"}}, "is_active": false}]}"#
+    return try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows().isEmpty
+}
+
+check("an inactive Fable record does not shadow the active allowance") {
+    let json = #"{"limits": [{"kind": "weekly_scoped", "percent": 94, "scope": {"model": {"display_name": "Fable"}}, "is_active": false}, {"kind": "weekly_scoped", "percent": 25, "scope": {"model": {"display_name": "Fable"}}, "is_active": true}]}"#
+    let windows = try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows()
+    return windows.count == 1 && windows[0].label == "Weekly · Fable" && windows[0].percentUsed == 25
+}
+
 check("legacy Fable allowance has a friendly label without a reset") {
     let json = #"{"seven_day_overage_included": {"utilization": 25}, "limits": null}"#
     let windows = try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows()

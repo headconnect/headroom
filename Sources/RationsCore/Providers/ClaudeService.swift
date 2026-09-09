@@ -117,9 +117,11 @@ struct ClaudeUsage: Decodable {
         let percent: Double?
         let resetsAt: Date?
         let scope: Scope?
+        let isActive: Bool?
         enum CodingKeys: String, CodingKey {
             case kind, percent, scope
             case resetsAt = "resets_at"
+            case isActive = "is_active"
         }
     }
 
@@ -193,7 +195,7 @@ struct ClaudeUsage: Decodable {
                             menuBarRole: key == "five_hour" ? .session : key == "seven_day" ? .weekly : nil)
             }
         if let fable = scopedLimits.first(where: {
-            $0.kind == "weekly_scoped" && $0.percent != nil
+            $0.kind == "weekly_scoped" && $0.percent != nil && $0.isActive != false
                 && $0.scope?.model?.displayName?.caseInsensitiveCompare("Fable") == .orderedSame
         }), let percent = fable.percent {
             // Prefer the named limit when both API representations are present.
