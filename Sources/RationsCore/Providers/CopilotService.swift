@@ -128,7 +128,8 @@ struct CopilotUsage: Decodable {
             .sorted { rank($0.key) < rank($1.key) }
             .map { key, quota in
                 UsageWindow(id: key, label: Self.labels[key] ?? key.replacingOccurrences(of: "_", with: " ").capitalized,
-                            percentUsed: 100 - (quota.percentRemaining ?? 0), resetsAt: quotaResetDateUtc, detail: Self.detail(quota))
+                            percentUsed: 100 - (quota.percentRemaining ?? 0), resetsAt: quotaResetDateUtc,
+                            detail: Self.detail(quota), menuBarRole: .quota)
             }
     }
 

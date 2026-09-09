@@ -96,6 +96,17 @@ choose how each account is shown; at least one stays on. *Session* and *Weekly*
 choose which limits are shown, for providers that have both. Copilot has a
 single quota and always shows it.
 
+*At 100%, show time until reset* replaces an exhausted percentage with a local
+countdown, such as `04:37` or `3d 17:29`. Session and weekly countdowns are
+independent and off by default; the weekly/monthly option also covers Copilot.
+Account customisation can override them. Countdowns update every minute without
+extra API requests. Without a reset time the percentage stays; after the reset,
+`00:00` stays until fresh usage arrives.
+
+Claude's popover also shows *Weekly · Fable* when Anthropic reports that
+allowance. Its percentage measures the Fable allowance itself; 100% means that
+allowance is exhausted. It never appears in the menu bar.
+
 **General.** *Popover opacity* runs from 30 % to fully opaque; the popover
 is translucent by default, and this keeps it readable over light windows.
 *Launch at login* registers the app with macOS. *Check for updates* is off by
@@ -137,7 +148,8 @@ All three providers expose the usage numbers behind an OAuth token:
 
 These endpoints are not publicly documented, so field names may change. The
 Claude parser accepts any limit key that carries a `utilization` value; unknown
-keys are shown only when they have a reset time.
+keys are shown only when they have a reset time. It also reads the named Fable
+allowance from the API's `limits` array.
 
 The app talks only to anthropic.com, claude.ai, openai.com, chatgpt.com and
 github.com. With "Check for updates" on (off by default) it also asks

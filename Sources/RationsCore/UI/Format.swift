@@ -1,6 +1,21 @@
 import SwiftUI
 
 enum Format {
+    /// Round up to a whole minute; expired snapshots stay at 00:00 until refreshed.
+    static func menuBarCountdown(to date: Date, from now: Date) -> String {
+        let minutes = Int(ceil(max(0, date.timeIntervalSince(now)) / 60))
+        let days = minutes / (24 * 60)
+        let clock = String(format: "%02d:%02d", (minutes / 60) % 24, minutes % 60)
+        return days > 0 ? "\(days)d \(clock)" : clock
+    }
+
+    static func menuBarValue(_ window: UsageWindow, options: MenuBarOptions, now: Date) -> String {
+        if options.showsCountdown(for: window), let reset = window.resetsAt {
+            return menuBarCountdown(to: reset, from: now)
+        }
+        return percent(window.percentUsed)
+    }
+
     /// "4h 36m", "6d 5h", "12m", or "now".
     static func countdown(to date: Date, from now: Date) -> String {
         let seconds = Int(date.timeIntervalSince(now))

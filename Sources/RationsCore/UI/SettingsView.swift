@@ -12,6 +12,8 @@ struct SettingsView: View {
     @AppStorage(Settings.menuBarPercent) private var showPercent = true
     @AppStorage(Settings.menuBarSession) private var showSession = true
     @AppStorage(Settings.menuBarWeekly) private var showWeekly = true
+    @AppStorage(Settings.menuBarSessionCountdown) private var sessionCountdown = false
+    @AppStorage(Settings.menuBarWeeklyCountdown) private var weeklyCountdown = false
     @AppStorage(Settings.popoverOpacity) private var opacity = Settings.defaultPopoverOpacity
     @AppStorage(Settings.checkForUpdates) private var checkForUpdates = false
 
@@ -23,7 +25,8 @@ struct SettingsView: View {
             }
             AddAccountMenu(store: store)
             heading("Global Default Menu Bar Appearance").padding(.top, 4)
-            MenuBarOptionToggles(bars: $showBars, percent: $showPercent, session: $showSession, weekly: $showWeekly)
+            MenuBarOptionToggles(bars: $showBars, percent: $showPercent, session: $showSession, weekly: $showWeekly,
+                                 sessionCountdown: $sessionCountdown, weeklyCountdown: $weeklyCountdown)
             heading("General").padding(.top, 4)
             HStack {
                 Text("Popover opacity")
@@ -54,24 +57,41 @@ struct SettingsView: View {
     }
 }
 
-/// The four gauge toggles as an aligned 2x2 grid: how to draw (bars,
-/// percentages) in one column, which windows (session, weekly) in the other.
-/// At least one of each pair stays on: the last one of a pair is disabled.
+/// At least one display style and one window stay enabled. Copilot always
+/// shows its monthly quota and uses the long-term countdown preference.
 struct MenuBarOptionToggles: View {
     @Binding var bars: Bool
     @Binding var percent: Bool
     @Binding var session: Bool
     @Binding var weekly: Bool
+    @Binding var sessionCountdown: Bool
+    @Binding var weeklyCountdown: Bool
+    var provider: Provider? = nil
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 6) {
-            GridRow {
-                Toggle("Bars", isOn: $bars).disabled(!percent)
-                Toggle("Session", isOn: $session).disabled(!weekly)
+        VStack(alignment: .leading, spacing: 6) {
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 6) {
+                GridRow {
+                    Toggle("Bars", isOn: $bars).disabled(!percent)
+                    if provider != .copilot {
+                        Toggle("Session", isOn: $session).disabled(!weekly)
+                    }
+                }
+                GridRow {
+                    Toggle("Percentages", isOn: $percent).disabled(!bars)
+                    if provider != .copilot {
+                        Toggle("Weekly", isOn: $weekly).disabled(!session)
+                    }
+                }
             }
-            GridRow {
-                Toggle("Percentages", isOn: $percent).disabled(!bars)
-                Toggle("Weekly", isOn: $weekly).disabled(!session)
+            Text("At 100%, show time until reset:").font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 24) {
+                if provider != .copilot {
+                    Toggle("Session", isOn: $sessionCountdown).disabled(!percent || !session)
+                }
+                Toggle(provider == .copilot ? "Monthly quota" : provider == nil ? "Weekly / monthly" : "Weekly",
+                       isOn: $weeklyCountdown)
+                    .disabled(!percent || (provider != .copilot && provider != nil && !weekly))
             }
         }
     }
