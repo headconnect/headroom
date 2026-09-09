@@ -62,7 +62,9 @@ struct AccountSettingsRow: View {
             if monitor.account.menuBar != nil {
                 MenuBarOptionToggles(
                     bars: option(\.bars), percent: option(\.percent),
-                    session: option(\.session), weekly: option(\.weekly)
+                    session: option(\.session), weekly: option(\.weekly),
+                    sessionCountdown: option(\.sessionCountdown), weeklyCountdown: option(\.weeklyCountdown),
+                    provider: monitor.provider
                 )
                 .padding(.leading, 20)
             }

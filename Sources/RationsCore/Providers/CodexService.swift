@@ -109,7 +109,8 @@ struct CodexUsage: Decodable {
             .compactMap { id, window in
                 window.map {
                     UsageWindow(id: id, label: Self.label(seconds: $0.limitWindowSeconds), percentUsed: $0.usedPercent,
-                                resetsAt: $0.resetAt.map { Date(timeIntervalSince1970: $0) })
+                                resetsAt: $0.resetAt.map { Date(timeIntervalSince1970: $0) },
+                                menuBarRole: id == "primary" ? .session : .weekly)
                 }
             }
     }

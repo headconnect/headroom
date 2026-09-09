@@ -100,9 +100,31 @@ private struct Profile: Decodable {
     let account: Account
 }
 
-/// The usage payload is a flat object whose keys are limit names; decode with `apiRawKeys`. Known names get
-/// friendly labels; unknown ones are shown only when they carry a reset time.
+/// Decode with `apiRawKeys`: legacy limit keys plus the newer named `limits`
+/// array. Unknown legacy keys are shown only when they carry a reset time.
 struct ClaudeUsage: Decodable {
+    /// Newer responses put model allowances in `limits`, with a display name
+    /// instead of a stable top-level key. Percent is relative to that allowance.
+    struct ScopedLimit: Decodable {
+        struct Scope: Decodable {
+            struct Model: Decodable {
+                let displayName: String?
+                enum CodingKeys: String, CodingKey { case displayName = "display_name" }
+            }
+            let model: Model?
+        }
+        let kind: String?
+        let percent: Double?
+        let resetsAt: Date?
+        let scope: Scope?
+        let isActive: Bool?
+        enum CodingKeys: String, CodingKey {
+            case kind, percent, scope
+            case resetsAt = "resets_at"
+            case isActive = "is_active"
+        }
+    }
+
     struct Window: Decodable {
         let utilization: Double?
         let resetsAt: Date?
@@ -125,12 +147,14 @@ struct ClaudeUsage: Decodable {
 
     private(set) var limits: [String: Window] = [:]
     private(set) var extraUsage: ExtraUsage?
+    private(set) var scopedLimits: [ScopedLimit] = []
 
     private static let labels: [String: String] = [
         "five_hour": "Session (5h)",
         "seven_day": "Weekly · all models",
         "seven_day_opus": "Weekly · Opus",
         "seven_day_sonnet": "Weekly · Sonnet",
+        "seven_day_overage_included": "Weekly · Fable",
         "seven_day_oauth_apps": "Weekly · OAuth apps",
         "seven_day_cowork": "Weekly · Cowork",
     ]
@@ -146,7 +170,14 @@ struct ClaudeUsage: Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: Key.self)
         for key in container.allKeys {
-            if key.stringValue == "extra_usage" {
+            if key.stringValue == "limits" {
+                if var entries = try? container.nestedUnkeyedContainer(forKey: key) {
+                    while !entries.isAtEnd {
+                        let entry = try entries.superDecoder()
+                        if let limit = try? ScopedLimit(from: entry) { scopedLimits.append(limit) }
+                    }
+                }
+            } else if key.stringValue == "extra_usage" {
                 extraUsage = try? container.decode(ExtraUsage.self, forKey: key)
             } else if let window = try? container.decodeIfPresent(Window.self, forKey: key), window.utilization != nil {
                 limits[key.stringValue] = window
@@ -160,8 +191,18 @@ struct ClaudeUsage: Decodable {
             .sorted { rank($0.key) < rank($1.key) }
             .map { key, window in
                 UsageWindow(id: key, label: Self.labels[key] ?? key.replacingOccurrences(of: "_", with: " ").capitalized,
-                            percentUsed: window.utilization ?? 0, resetsAt: window.resetsAt)
+                            percentUsed: window.utilization ?? 0, resetsAt: window.resetsAt,
+                            menuBarRole: key == "five_hour" ? .session : key == "seven_day" ? .weekly : nil)
             }
+        if let fable = scopedLimits.first(where: {
+            $0.kind == "weekly_scoped" && $0.percent != nil && $0.isActive != false
+                && $0.scope?.model?.displayName?.caseInsensitiveCompare("Fable") == .orderedSame
+        }), let percent = fable.percent {
+            // Prefer the named limit when both API representations are present.
+            result.removeAll { $0.id == "seven_day_overage_included" }
+            result.append(UsageWindow(id: "seven_day_overage_included", label: "Weekly · Fable",
+                                      percentUsed: percent, resetsAt: fable.resetsAt))
+        }
         if let extra = extraUsage, extra.isEnabled {
             result.append(UsageWindow(id: "extra_usage", label: "Extra usage", percentUsed: extra.utilization ?? 0, resetsAt: nil))
         }

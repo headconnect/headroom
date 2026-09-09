@@ -30,15 +30,18 @@ private struct AccountGauge: View {
     @AppStorage(Settings.menuBarPercent) private var showPercent = true
     @AppStorage(Settings.menuBarSession) private var showSession = true
     @AppStorage(Settings.menuBarWeekly) private var showWeekly = true
+    @AppStorage(Settings.menuBarSessionCountdown) private var sessionCountdown = false
+    @AppStorage(Settings.menuBarWeeklyCountdown) private var weeklyCountdown = false
 
     var body: some View {
         let options = MenuBarOptions.resolve(
             for: monitor.account,
-            global: MenuBarOptions(bars: showBars, percent: showPercent, session: showSession, weekly: showWeekly)
+            global: MenuBarOptions(bars: showBars, percent: showPercent, session: showSession, weekly: showWeekly,
+                                   sessionCountdown: sessionCountdown, weeklyCountdown: weeklyCountdown)
         )
         HStack(spacing: 4) {
             AccountLabel(account: monitor.account, height: 14)
-            let windows = selectedWindows(options)
+            let windows = monitor.snapshot.map { options.selectedWindows(in: $0) } ?? []
             if windows.isEmpty {
                 Text("–")
             } else {
@@ -48,18 +51,21 @@ private struct AccountGauge: View {
                     }
                 }
                 if options.percent {
-                    Text(windows.map { Format.percent($0.percentUsed) }.joined(separator: "/"))
+                    if windows.contains(where: { options.showsCountdown(for: $0) }) {
+                        // Local redraws only; the account's network schedule is unchanged.
+                        TimelineView(.everyMinute) { context in
+                            values(windows, options: options, now: context.date)
+                        }
+                    } else {
+                        values(windows, options: options, now: .now)
+                    }
                 }
             }
         }
     }
 
-    /// The headline windows the user wants; a provider with a single window
-    /// (Copilot) always shows it.
-    private func selectedWindows(_ options: MenuBarOptions) -> [UsageWindow] {
-        let headline = Array(monitor.snapshot?.headline ?? [])
-        guard headline.count > 1 else { return headline }
-        return headline.enumerated().filter { $0.offset == 0 ? options.session : options.weekly }.map(\.element)
+    private func values(_ windows: [UsageWindow], options: MenuBarOptions, now: Date) -> some View {
+        Text(windows.map { Format.menuBarValue($0, options: options, now: now) }.joined(separator: "/"))
     }
 }
 

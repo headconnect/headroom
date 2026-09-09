@@ -75,6 +75,61 @@ check("claude extra usage shown when enabled") {
     return windows.map(\.id) == ["five_hour", "extra_usage"]
 }
 
+check("claude reads the named Fable allowance from the live response shape") {
+    let json = """
+    {
+      "five_hour": {"utilization": 17, "resets_at": "2026-09-09T16:49:59+00:00"},
+      "seven_day": {"utilization": 59, "resets_at": "2026-09-12T16:59:59+00:00"},
+      "nimbus_quill": {"utilization": 0, "resets_at": null},
+      "limits": [
+        {"kind": "session", "percent": 17, "scope": null},
+        {"kind": "weekly_all", "percent": 59, "scope": null},
+        {"kind": "weekly_scoped", "percent": 94, "resets_at": "2026-09-12T16:59:59.769611+00:00",
+         "scope": {"model": {"id": null, "display_name": "Fable"}, "surface": null}, "is_active": true}
+      ]
+    }
+    """
+    let windows = try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows()
+    let snapshot = UsageSnapshot(windows: windows, fetchedAt: .now)
+    return windows.map(\.label) == ["Session (5h)", "Weekly · all models", "Weekly · Fable"]
+        && windows.last?.percentUsed == 94 && windows.last?.resetsAt == windows[1].resetsAt
+        && snapshot.headline.map(\.id) == ["five_hour", "seven_day"]
+}
+
+check("Fable stays popover-only with missing headline windows and no reset") {
+    let json = #"{"seven_day": {"utilization": 59}, "limits": [{"kind": "weekly_scoped", "percent": 0, "scope": {"model": {"display_name": "Fable"}}}]}"#
+    let windows = try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows()
+    let snapshot = UsageSnapshot(windows: windows, fetchedAt: .now)
+    return windows.last?.label == "Weekly · Fable" && windows.last?.percentUsed == 0
+        && snapshot.headline.map(\.id) == ["seven_day"]
+        && MenuBarOptions(session: false).selectedWindows(in: snapshot).map(\.id) == ["seven_day"]
+        && MenuBarOptions(weekly: false).selectedWindows(in: snapshot).isEmpty
+}
+
+check("named Fable limit wins over legacy data and ignores malformed entries") {
+    let json = #"{"seven_day_overage_included": {"utilization": 80}, "limits": [null, 42, {"kind": "weekly_scoped", "percent": "bad"}, {"kind": "weekly_scoped", "percent": 94, "scope": {"model": {"display_name": "Fable"}}}]}"#
+    let windows = try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows()
+    return windows.count == 1 && windows[0].label == "Weekly · Fable" && windows[0].percentUsed == 94
+        && UsageSnapshot(windows: windows, fetchedAt: .now).headline.isEmpty
+}
+
+check("explicitly inactive Fable limits are hidden") {
+    let json = #"{"limits": [{"kind": "weekly_scoped", "percent": 94, "scope": {"model": {"display_name": "Fable"}}, "is_active": false}]}"#
+    return try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows().isEmpty
+}
+
+check("an inactive Fable record does not shadow the active allowance") {
+    let json = #"{"limits": [{"kind": "weekly_scoped", "percent": 94, "scope": {"model": {"display_name": "Fable"}}, "is_active": false}, {"kind": "weekly_scoped", "percent": 25, "scope": {"model": {"display_name": "Fable"}}, "is_active": true}]}"#
+    let windows = try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows()
+    return windows.count == 1 && windows[0].label == "Weekly · Fable" && windows[0].percentUsed == 25
+}
+
+check("legacy Fable allowance has a friendly label without a reset") {
+    let json = #"{"seven_day_overage_included": {"utilization": 25}, "limits": null}"#
+    let windows = try JSONDecoder.apiRawKeys.decode(ClaudeUsage.self, from: Data(json.utf8)).windows()
+    return windows.count == 1 && windows[0].label == "Weekly · Fable" && windows[0].percentUsed == 25
+}
+
 check("codex usage windows") {
     let json = """
     {
@@ -165,6 +220,54 @@ check("countdown formatting") {
         && Format.countdown(to: now, from: now) == "now"
 }
 
+check("menu bar countdown formatting at minute and day boundaries") {
+    let now = Date(timeIntervalSince1970: 0)
+    let cases: [(TimeInterval, String)] = [
+        (4 * 3600 + 37 * 60, "04:37"), (3 * 86400 + 17 * 3600 + 29 * 60, "3d 17:29"),
+        (86400, "1d 00:00"), (86399, "1d 00:00"), (86340, "23:59"),
+        (60, "00:01"), (1, "00:01"), (0, "00:00"), (-60, "00:00")
+    ]
+    return cases.allSatisfy { Format.menuBarCountdown(to: now.addingTimeInterval($0.0), from: now) == $0.1 }
+}
+
+check("exhausted usage counts down between fetches and waits at zero after reset") {
+    let now = Date(timeIntervalSince1970: 0)
+    let window = UsageWindow(id: "five_hour", label: "Session", percentUsed: 100,
+                             resetsAt: now.addingTimeInterval(4 * 3600 + 37 * 60), menuBarRole: .session)
+    let options = MenuBarOptions(sessionCountdown: true)
+    return Format.menuBarValue(window, options: options, now: now) == "04:37"
+        && Format.menuBarValue(window, options: options, now: now.addingTimeInterval(60)) == "04:36"
+        && Format.menuBarValue(window, options: options, now: now.addingTimeInterval(20 * 60)) == "04:17"
+        && Format.menuBarValue(window, options: options, now: now.addingTimeInterval(6 * 3600)) == "00:00"
+        && Format.menuBarValue(window, options: MenuBarOptions(), now: now) == "100%"
+}
+
+check("countdowns require exhaustion, a reset, and the matching enabled setting") {
+    let reset = Date(timeIntervalSince1970: 10000)
+    let session = UsageWindow(id: "five_hour", label: "Session", percentUsed: 100, resetsAt: reset, menuBarRole: .session)
+    let weekly = UsageWindow(id: "seven_day", label: "Weekly", percentUsed: 100, resetsAt: reset, menuBarRole: .weekly)
+    let almost = UsageWindow(id: "primary", label: "Session", percentUsed: 99.9, resetsAt: reset, menuBarRole: .session)
+    let noReset = UsageWindow(id: "primary", label: "Session", percentUsed: 100, resetsAt: nil, menuBarRole: .session)
+    let options = MenuBarOptions(sessionCountdown: true)
+    return options.showsCountdown(for: session) && !options.showsCountdown(for: weekly)
+        && !options.showsCountdown(for: almost) && !options.showsCountdown(for: noReset)
+        && !MenuBarOptions(percent: false, sessionCountdown: true).showsCountdown(for: session)
+        && !MenuBarOptions(session: false, sessionCountdown: true).showsCountdown(for: session)
+        && MenuBarOptions(weeklyCountdown: true).showsCountdown(for: weekly)
+        && !MenuBarOptions(weekly: false, weeklyCountdown: true).showsCountdown(for: weekly)
+}
+
+check("Copilot uses the long-term countdown regardless of session and weekly visibility") {
+    let now = Date(timeIntervalSince1970: 0)
+    let quota = UsageWindow(id: "premium_interactions", label: "Monthly", percentUsed: 100,
+                            resetsAt: now.addingTimeInterval(3 * 86400 + 17 * 3600 + 29 * 60), menuBarRole: .quota)
+    let snapshot = UsageSnapshot(windows: [quota], fetchedAt: now)
+    let options = MenuBarOptions(session: false, weekly: false, weeklyCountdown: true)
+    return options.selectedWindows(in: snapshot) == [quota]
+        && Format.menuBarValue(quota, options: options, now: now) == "3d 17:29"
+        && !MenuBarOptions(sessionCountdown: true).showsCountdown(for: quota)
+}
+
 check("age formatting") {
     let now = Date(timeIntervalSince1970: 1_000_000)
     return Format.age(now.addingTimeInterval(-20), now: now) == "just now"
@@ -227,11 +330,29 @@ check("second account of a provider is numbered") {
 }
 
 check("menu bar options follow the globals unless overridden") {
-    let globals = MenuBarOptions(bars: false, percent: true, session: true, weekly: false)
+    let globals = MenuBarOptions(bars: false, percent: true, session: true, weekly: false, sessionCountdown: true)
     var account = Account(provider: .claude, tag: "A")
     let followed = MenuBarOptions.resolve(for: account, global: globals)
     account.menuBar = MenuBarOptions(bars: true, percent: false, session: false, weekly: true)
     return followed == globals && MenuBarOptions.resolve(for: account, global: globals) == account.menuBar
+}
+
+check("old account overrides decode without losing accounts or enabling countdowns") {
+    let json = #"[{"id":"00000000-0000-0000-0000-000000000001","provider":"claude","tag":"A","name":"Office","menuBar":{"bars":false,"percent":true,"session":false,"weekly":true}}]"#
+    let accounts = try JSONDecoder().decode([Account].self, from: Data(json.utf8))
+    return accounts.count == 1 && accounts[0].name == "Office"
+        && accounts[0].menuBar == MenuBarOptions(bars: false, session: false)
+}
+
+check("countdown overrides persist and stay independent per account") {
+    let globals = MenuBarOptions(sessionCountdown: true)
+    let a = Account(provider: .claude, tag: "A", menuBar: MenuBarOptions(weeklyCountdown: true))
+    let b = Account(provider: .claude, tag: "A2")
+    let data = try JSONEncoder().encode([a, b])
+    let accounts = try JSONDecoder().decode([Account].self, from: data)
+    return accounts == [a, b]
+        && MenuBarOptions.resolve(for: accounts[0], global: globals) == MenuBarOptions(weeklyCountdown: true)
+        && MenuBarOptions.resolve(for: accounts[1], global: globals) == globals
 }
 
 check("menu bar options keep one of each pair") {
@@ -245,9 +366,11 @@ check("global menu bar options default to on") {
     defaults.removePersistentDomain(forName: suite)
     let fresh = MenuBarOptions.global(defaults)
     defaults.set(false, forKey: Settings.menuBarWeekly)
+    defaults.set(true, forKey: Settings.menuBarWeeklyCountdown)
     let edited = MenuBarOptions.global(defaults)
     defaults.removePersistentDomain(forName: suite)
     return fresh == MenuBarOptions() && !edited.weekly && edited.session
+        && edited.weeklyCountdown && !edited.sessionCountdown
 }
 
 // MARK: Live (optional)
