@@ -21,7 +21,7 @@ struct UsageWindow: Equatable, Identifiable {
         self.detail = detail
         self.menuBarRole = menuBarRole
         self.percentUsed = min(max(percentUsed, 0), 100)
-        // Whole seconds, so sub-second jitter in API timestamps never counts as a change.
+        // Whole seconds, so a countdown does not wobble on sub-second jitter.
         self.resetsAt = resetsAt.map { Date(timeIntervalSince1970: $0.timeIntervalSince1970.rounded(.down)) }
     }
 }
@@ -36,9 +36,18 @@ struct UsageSnapshot: Equatable {
 
     var earliestReset: Date? { windows.compactMap(\.resetsAt).min() }
 
-    /// True if any limit moved since `previous`.
+    /// True if any limit's usage moved since `previous`.
+    ///
+    /// Identity and usage only. `resetsAt` is deliberately excluded: the Claude
+    /// API recomputes it per request with a few ms of forward drift per second,
+    /// so it crosses a whole second every couple of minutes even when nothing
+    /// is happening. Comparing whole windows therefore saw a change on almost
+    /// every poll, which pinned the interval to `RefreshPolicy.boost` and
+    /// defeated the backoff.
     func hasChanges(since previous: UsageSnapshot?) -> Bool {
-        guard let previous else { return true }
-        return windows != previous.windows
+        guard let previous, windows.count == previous.windows.count else { return true }
+        return zip(windows, previous.windows).contains {
+            $0.id != $1.id || $0.percentUsed != $1.percentUsed || $0.detail != $1.detail
+        }
     }
 }

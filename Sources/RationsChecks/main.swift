@@ -40,11 +40,69 @@ check("unchanged backs off 5 → 10 → 20 → 20") {
     return intervals == [300, 600, 1200, 1200]
 }
 
+check("rate limit backoff is marked, success clears it") {
+    var policy = RefreshPolicy()
+    policy.backOff()
+    guard policy.isBackingOff else { return false }
+    policy.record(changed: false)
+    return !policy.isBackingOff
+}
+
 check("reset returns to base") {
     var policy = RefreshPolicy()
     policy.backOff()
     policy.reset()
     return policy.interval == 5 * 60
+}
+
+// MARK: Change detection
+
+/// The Claude API recomputes resets_at per request with a few ms of forward
+/// drift per second, so it straddles whole seconds every couple of minutes.
+/// Counting that as a change pinned the poll interval to boost forever.
+check("drifting reset time alone is not a change") {
+    let earlier = UsageSnapshot(windows: [
+        UsageWindow(id: "five_hour", label: "Session (5h)", percentUsed: 16,
+                    resetsAt: ISO8601.date("2026-09-10T10:39:59.891656+00:00")),
+    ], fetchedAt: .now)
+    let later = UsageSnapshot(windows: [
+        UsageWindow(id: "five_hour", label: "Session (5h)", percentUsed: 16,
+                    resetsAt: ISO8601.date("2026-09-10T10:40:00.192184+00:00")),
+    ], fetchedAt: .now)
+    return !later.hasChanges(since: earlier)
+}
+
+check("moved usage is a change") {
+    let earlier = UsageSnapshot(windows: [
+        UsageWindow(id: "five_hour", label: "Session (5h)", percentUsed: 16, resetsAt: nil),
+    ], fetchedAt: .now)
+    let later = UsageSnapshot(windows: [
+        UsageWindow(id: "five_hour", label: "Session (5h)", percentUsed: 17, resetsAt: nil),
+    ], fetchedAt: .now)
+    return later.hasChanges(since: earlier)
+}
+
+check("a changed detail counts even at the same percent") {
+    let earlier = UsageSnapshot(windows: [
+        UsageWindow(id: "chat", label: "Chat", percentUsed: 19, resetsAt: nil, detail: "8,151 of 10,000 left"),
+    ], fetchedAt: .now)
+    let later = UsageSnapshot(windows: [
+        UsageWindow(id: "chat", label: "Chat", percentUsed: 19, resetsAt: nil, detail: "8,140 of 10,000 left"),
+    ], fetchedAt: .now)
+    return later.hasChanges(since: earlier)
+}
+
+check("an added or renamed window is a change") {
+    let one = UsageSnapshot(windows: [
+        UsageWindow(id: "five_hour", label: "Session (5h)", percentUsed: 16, resetsAt: nil),
+    ], fetchedAt: .now)
+    let two = UsageSnapshot(windows: one.windows + [
+        UsageWindow(id: "seven_day", label: "Weekly", percentUsed: 66, resetsAt: nil),
+    ], fetchedAt: .now)
+    let renamed = UsageSnapshot(windows: [
+        UsageWindow(id: "session", label: "Session (5h)", percentUsed: 16, resetsAt: nil),
+    ], fetchedAt: .now)
+    return two.hasChanges(since: one) && one.hasChanges(since: two) && renamed.hasChanges(since: one)
 }
 
 // MARK: Parsing

@@ -109,10 +109,11 @@ final class AccountMonitor: Identifiable {
         return fresh
     }
 
-    /// Policy interval, shortened so a window reset is picked up promptly.
+    /// Policy interval, shortened so a window reset is picked up promptly -
+    /// except while rate limited, where the backoff has to win.
     private func nextDelay() -> TimeInterval {
         var delay = policy.interval
-        if let reset = snapshot?.earliestReset, reset > .now {
+        if !policy.isBackingOff, let reset = snapshot?.earliestReset, reset > .now {
             delay = min(delay, reset.timeIntervalSinceNow + 15)
         }
         return max(delay, 30)
